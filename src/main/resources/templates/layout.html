@@ -30,14 +30,32 @@
 
     <!-- Estilo customizado mínimo -->
     <style>
+        :root {
+            --bs-primary: #c94b0c;
+            --bs-body-bg: #f0f0d8;
+        }
+        .bg-primary {
+            background-color: #c94b0c !important;
+        }
+        .btn-primary {
+            background-color: #c94b0c;
+            border-color: #c94b0c;
+        }
+        .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+            background-color: #5a372c !important;
+            border-color: #5a372c !important;
+        }
+        .bg-light {
+            background-color: #f0f0d8 !important;
+        }
         body {
-            background-color: #f8f9fa;
+            background-color: #f0f0d8;
         }
         .navbar-brand {
             font-weight: bold;
         }
         .table-hover tbody tr:hover {
-            background-color: #e9ecef;
+            background-color: #fafaf0;
         }
         /* Indicador de carregamento HTMX */
         .htmx-indicator {

@@ -18,8 +18,19 @@
     <link rel="stylesheet"
           th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
     <style>
+        :root {
+            --bs-primary: #c94b0c;
+        }
+        .btn-primary {
+            background-color: #c94b0c;
+            border-color: #c94b0c;
+        }
+        .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+            background-color: #5a372c !important;
+            border-color: #5a372c !important;
+        }
         body {
-            background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+            background: linear-gradient(135deg, #c94b0c 0%, #5a372c 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -32,7 +43,7 @@
             box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.3);
         }
         .login-header {
-            background: linear-gradient(135deg, #0d6efd, #0a58ca);
+            background: linear-gradient(135deg, #c94b0c, #5a372c);
             border-radius: 1rem 1rem 0 0;
             padding: 2rem;
             text-align: center;
