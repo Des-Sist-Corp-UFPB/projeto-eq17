@@ -163,7 +163,7 @@
         </plugins>
     </build>
 
-    <!-- Perfil 'security': ativa SAST + verificação de dependências -->
+    <!-- Perfil 'security': ativa SAST -->
     <!-- Uso: mvn verify -Psecurity -->
     <profiles>
         <profile>
@@ -195,8 +195,16 @@
                             </execution>
                         </executions>
                     </plugin>
+                </plugins>
+            </build>
+        </profile>
 
-                    <!-- OWASP Dependency-Check: CVEs nas dependências -->
+        <!-- Perfil 'dependency-check': verifica CVEs nas dependências -->
+        <!-- Uso: NVD_API_KEY=sua-chave mvn verify -Pdependency-check -DskipTests -->
+        <profile>
+            <id>dependency-check</id>
+            <build>
+                <plugins>
                     <plugin>
                         <groupId>org.owasp</groupId>
                         <artifactId>dependency-check-maven</artifactId>

@@ -64,6 +64,8 @@ jobs:
   test-and-sast:
     name: Testes e SAST
     runs-on: ubuntu-latest
+    env:
+      NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
 
     steps:
       - name: Checkout do código
@@ -80,12 +82,11 @@ jobs:
           cache: maven
 
       - name: Cache OWASP Dependency Check
+        if: ${{ env.NVD_API_KEY != '' }}
         uses: actions/cache@v4
         with:
           path: ~/.dependency-check
-          key: dependency-check-${{ runner.os }}-${{ hashFiles('pom.xml') }}
-          restore-keys: |
-            dependency-check-${{ runner.os }}-
+          key: dependency-check-v2-${{ runner.os }}-${{ hashFiles('pom.xml') }}
 
       # ── Compilação e testes ────────────────────────────────────────────────
       # mvn verify: compila, roda testes unitários e de integração (Testcontainers),
@@ -101,17 +102,24 @@ jobs:
       # FindSecBugs é um plugin que adiciona ~400 regras de segurança ao SpotBugs.
       # Detecta: SQL Injection, XSS, Path Traversal, criptografia fraca, etc.
       #
-      # SAST 2: OWASP Dependency Check
-      # Cruza as dependências do projeto com o banco de CVEs do NVD (NIST).
-      # Falha o build se encontrar dependência com CVSS >= 7.0 (HIGH/CRITICAL).
-      # A NVD_API_KEY acelera o download do banco de CVEs (~minutos vs ~horas sem key).
-      - name: SpotBugs + FindSecBugs + OWASP Dependency Check
-        env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+      - name: SpotBugs + FindSecBugs
         run: |
           mvn verify -Psecurity -DskipTests -B
-        # O perfil "security" está definido no pom.xml e ativa esses dois plugins.
+        # O perfil "security" está definido no pom.xml e ativa SpotBugs + FindSecBugs.
         # -DskipTests: testes já rodaram no passo anterior, não precisa rodar de novo.
+
+      # SAST 2: OWASP Dependency Check
+      # Cruza as dependências do projeto com o banco de CVEs do NVD (NIST).
+      # Só roda quando NVD_API_KEY está configurada, evitando falhas por rate limit.
+      - name: OWASP Dependency Check
+        if: ${{ env.NVD_API_KEY != '' }}
+        run: |
+          mvn verify -Pdependency-check -DskipTests -B
+
+      - name: OWASP Dependency Check ignorado
+        if: ${{ env.NVD_API_KEY == '' }}
+        run: |
+          echo "NVD_API_KEY não configurada; pulando OWASP Dependency Check para evitar falhas do NVD sem chave."
 
       # ── SAST 3: Semgrep ───────────────────────────────────────────────────
       # Analisa o CÓDIGO-FONTE com regras baseadas em padrões.
