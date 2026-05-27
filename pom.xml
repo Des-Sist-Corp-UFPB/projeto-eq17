@@ -22,6 +22,7 @@
         <java.version>21</java.version>
         <!-- Versões de dependências -->
         <testcontainers.version>1.20.4</testcontainers.version>
+        <tomcat.version>10.1.55</tomcat.version>
         <postgresql.version>42.7.11</postgresql.version>
         <webjars-bootstrap.version>5.3.8</webjars-bootstrap.version>
         <webjars-htmx.version>2.0.4</webjars-htmx.version>
