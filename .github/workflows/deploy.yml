@@ -282,17 +282,18 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
 
-      # Copia o docker-compose.prod.yml para o servidor a cada deploy.
-      # Garante que o servidor sempre tem a versão mais recente do arquivo,
-      # incluindo mudanças de variáveis de ambiente, healthchecks, redes, etc.
-      - name: Copiar docker-compose.prod.yml para o servidor
+      # Copia o docker-compose.prod.yml e o .env.example para o servidor a cada deploy.
+      # Garante que o servidor sempre tem a versão mais recente dos arquivos de configuração.
+      - name: Copiar arquivos de configuração para o servidor
         uses: appleboy/scp-action@v0.1.7
         with:
           host: dsc.rodrigor.com
           username: ghactions
           key: ${{ secrets.SSH_DEPLOY_KEY }}
-          source: docker/docker-compose.prod.yml
-          target: /home/ghactions/mercado/
+          source: |
+            docker/docker-compose.prod.yml
+            .env.example
+          target: /home/ghactions/projeto-eq17/
 
       # Script de deploy executado no servidor via SSH.
       # envs: passa variáveis de ambiente do Actions para o script remoto.
@@ -312,7 +313,7 @@ jobs:
           script: |
             set -euo pipefail
 
-            DEPLOY_DIR="/home/ghactions/mercado"
+            DEPLOY_DIR="/home/ghactions/projeto-eq17"
             COMPOSE_FILE="$DEPLOY_DIR/docker/docker-compose.prod.yml"
 
             echo "======================================================"
@@ -320,20 +321,34 @@ jobs:
             echo " Imagem: $IMAGE_FULL"
             echo "======================================================"
 
-            # ── 1. Autenticar no GHCR ──────────────────────────────────────
+            # ── 1. Criar o diretório de deploy caso não exista ─────────────
+            mkdir -p "$DEPLOY_DIR"
+            cd "$DEPLOY_DIR"
+
+            # ── 2. Inicializar o arquivo .env se não existir ───────────────
+            if [ ! -f .env ]; then
+              echo "Inicializando arquivo .env a partir do .env.example..."
+              cp .env.example .env
+            fi
+
+            # Carregar as variáveis do arquivo .env para uso no script
+            set -a
+            source .env
+            set +a
+
+            CONTAINER_NAME_VAL="${CONTAINER_NAME:-eq17-app}"
+
+            # ── 3. Autenticar no GHCR ──────────────────────────────────────
             # GITHUB_TOKEN (passado como GHCR_TOKEN) tem permissão de leitura
             # de pacotes e é válido durante a execução deste workflow.
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             echo "✓ Autenticado no GHCR"
 
-            # ── 2. Baixar a nova imagem ────────────────────────────────────
+            # ── 4. Baixar a nova imagem ────────────────────────────────────
             docker pull "$IMAGE_FULL"
             echo "✓ Imagem baixada: $IMAGE_FULL"
 
-            # ── 3. Atualizar a referência da imagem no .env ────────────────
-            # O docker-compose.prod.yml usa ${APP_IMAGE} — mantemos o .env atualizado
-            # para facilitar operações manuais futuras no servidor.
-            cd "$DEPLOY_DIR"
+            # ── 5. Atualizar a referência da imagem no .env ────────────────
             if grep -q "^APP_IMAGE=" .env 2>/dev/null; then
               sed -i "s|^APP_IMAGE=.*|APP_IMAGE=$IMAGE_FULL|" .env
             else
@@ -341,10 +356,9 @@ jobs:
             fi
             echo "✓ .env atualizado com APP_IMAGE=$IMAGE_FULL"
 
-            # ── 4. Reiniciar APENAS o container da aplicação ──────────────
-            # --no-deps:         NÃO reinicia o postgres (banco seguro, dados preservados)
+            # ── 6. Reiniciar o container da aplicação ──────────────────────
+            # --no-deps:         NÃO reinicia outros serviços
             # --force-recreate:  garante que o container seja recriado com a nova imagem
-            #                    (sem --force-recreate, o Compose pode reutilizar o container antigo)
             echo "Reiniciando container da aplicação..."
             docker compose -f "$COMPOSE_FILE" up -d \
               --no-deps \
@@ -352,27 +366,34 @@ jobs:
               app
             echo "✓ Container reiniciado"
 
-            # ── 5. Verificar saúde da aplicação com retry ─────────────────
+            # ── 7. Verificar saúde da aplicação com retry ─────────────────
             # O Spring Boot leva ~15-30s para inicializar.
             # Tentamos até 18 vezes (a cada 5s = 90s máximo).
-            # O endpoint /actuator/health retorna 200 quando a aplicação está pronta.
+            # Verificamos a saúde do container pelo status do Docker Healthcheck.
             echo "Aguardando a aplicação ficar saudável (máx. 90s)..."
             for i in $(seq 1 18); do
-              if curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER_NAME_VAL" 2>/dev/null || echo "not-found")
+              if [ "$STATUS" = "healthy" ]; then
                 echo "✓ Aplicação saudável! ($(( i * 5 ))s)"
                 break
               fi
-              if [ "$i" -eq 18 ]; then
-                echo "✗ ERRO: aplicação não ficou saudável após 90 segundos"
+              if [ "$STATUS" = "unhealthy" ]; then
+                echo "✗ ERRO: aplicação ficou insalúvel (unhealthy)"
                 echo "--- Últimas 80 linhas do log da aplicação ---"
-                docker logs mercado-app-prod --tail 80
+                docker logs "$CONTAINER_NAME_VAL" --tail 80
                 exit 1
               fi
-              echo "  aguardando... ($i/18, $(( i * 5 ))s)"
+              if [ "$i" -eq 18 ]; then
+                echo "✗ ERRO: aplicação não ficou saudável após 90 segundos (status: $STATUS)"
+                echo "--- Últimas 80 linhas do log da aplicação ---"
+                docker logs "$CONTAINER_NAME_VAL" --tail 80
+                exit 1
+              fi
+              echo "  aguardando... ($i/18, $(( i * 5 ))s, status do container: $STATUS)"
               sleep 5
             done
 
-            # ── 6. Limpar imagens antigas ──────────────────────────────────
+            # ── 8. Limpar imagens antigas ──────────────────────────────────
             # Remove imagens sem tag (dangling images) que ficam após cada deploy.
             docker image prune -f > /dev/null
             echo "✓ Imagens antigas removidas"

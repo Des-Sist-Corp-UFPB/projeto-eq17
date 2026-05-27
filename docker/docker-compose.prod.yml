@@ -4,22 +4,20 @@
 #
 # Em produção, a imagem Docker é construída pelo GitHub Actions e publicada
 # no GHCR (GitHub Container Registry). Este arquivo usa a imagem pré-construída
-# em vez de buildar no servidor — mais seguro, rápido e rastreável.
+# em vez de buildar no servidor.
 #
-# CONFIGURAÇÃO — arquivo .env na raiz do projeto no servidor:
+# CONFIGURAÇÃO — arquivo .env no diretório /home/ghactions/projeto-eq17/ no servidor:
 #
-#   APP_IMAGE=ghcr.io/usuario/mercado:latest   ← atualizado automaticamente pelo CI/CD
-#   DATABASE_URL=jdbc:postgresql://postgres:5432/mercado_prod
-#   DATABASE_USERNAME=mercado
-#   DATABASE_PASSWORD=<senha-forte-aqui>
+#   APP_IMAGE=ghcr.io/des-sist-corp-ufpb/projeto-eq17:latest
+#   DATABASE_URL=jdbc:postgresql://postgres:5432/eq17
+#   DATABASE_USERNAME=postgres
+#   DATABASE_PASSWORD=<senha-do-banco>
+#   CONTAINER_NAME=eq17-app
+#   HOST_PORT=8017
+#   APP_DOMAIN=eq17.dsc.rodrigor.com
+#   DOCKER_NETWORK=caddy
 #
-# PRIMEIRA EXECUÇÃO (banco de dados):
-#   docker compose -f docker/docker-compose.prod.yml up -d postgres
-#   # Aguardar o banco inicializar (~10s) e depois subir a aplicação:
-#   docker compose -f docker/docker-compose.prod.yml up -d app
-#
-# ATUALIZAÇÕES subsequentes (feitas automaticamente pelo GitHub Actions):
-#   APP_IMAGE=ghcr.io/usuario/mercado:latest \
+# ATUALIZAÇÕES (feitas automaticamente pelo GitHub Actions):
 #   docker compose -f docker/docker-compose.prod.yml up -d --no-deps --force-recreate app
 #
 # =============================================================================
@@ -27,55 +25,24 @@
 services:
 
   # ---------------------------------------------------------------------------
-  # Banco de dados PostgreSQL
-  # ---------------------------------------------------------------------------
-  postgres:
-    image: postgres:16-alpine
-    container_name: mercado-postgres-prod
-    environment:
-      POSTGRES_DB: mercado_prod
-      POSTGRES_USER: ${DATABASE_USERNAME}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-    volumes:
-      # Volume nomeado — persiste os dados mesmo se o container for recriado.
-      # NUNCA use bind mount (./data:...) em produção — dificulta backups e permissões.
-      - postgres-prod-data:/var/lib/postgresql/data
-    # Em produção, NÃO exponha o banco diretamente para o host.
-    # O container da aplicação acessa via rede interna (mercado-net).
-    expose:
-      - "5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d mercado_prod"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    restart: unless-stopped
-    networks:
-      - mercado-net
-
-  # ---------------------------------------------------------------------------
   # Aplicação Spring Boot
-  #
-  # Usa a imagem pré-construída pelo CI/CD (GitHub Actions).
-  # A variável APP_IMAGE é atualizada automaticamente no .env a cada deploy.
   # ---------------------------------------------------------------------------
   app:
-    # ${APP_IMAGE} é definida no .env e atualizada pelo script de deploy.
-    # Exemplo: ghcr.io/usuario/mercado:latest
-    # O CI/CD também usa tags com commit hash (ghcr.io/usuario/mercado:sha-a1b2c3d)
-    # para rastreabilidade — aqui usamos :latest que aponta para o build mais recente.
     image: ${APP_IMAGE}
-    container_name: mercado-app-prod
+    container_name: ${CONTAINER_NAME:-eq17-app}
     environment:
-      DATABASE_URL: ${DATABASE_URL:-jdbc:postgresql://postgres:5432/mercado_prod}
+      DATABASE_URL: ${DATABASE_URL:-jdbc:postgresql://postgres:5432/eq17}
       DATABASE_USERNAME: ${DATABASE_USERNAME}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
     ports:
-      - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
+      # Expõe a porta de forma configurável para evitar colisões
+      - "${HOST_PORT:-8017}:8080"
+    
+    # Integração automática com Caddy (Caddy Docker Proxy)
+    labels:
+      caddy: ${APP_DOMAIN:-eq17.dsc.rodrigor.com}
+      caddy.reverse_proxy: "{{upstreams 8080}}"
+
     # Healthcheck via Spring Actuator — o Docker considera o container saudável
     # somente quando a aplicação estiver pronta para receber requisições.
     healthcheck:
@@ -86,12 +53,10 @@ services:
       start_period: 60s    # Spring Boot precisa de até 60s para inicializar
     restart: unless-stopped
     networks:
-      - mercado-net
-
-volumes:
-  # Volume nomeado — gerenciado pelo Docker, persistente entre deploys
-  postgres-prod-data:
+      - caddy
 
 networks:
-  mercado-net:
-    driver: bridge
+  # Rede docker externa por onde o Caddy se comunica com os containers das equipes
+  caddy:
+    name: ${DOCKER_NETWORK:-caddy}
+    external: true
