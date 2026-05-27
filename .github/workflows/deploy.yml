@@ -307,9 +307,7 @@ jobs:
           host: dsc.rodrigor.com
           username: ghactions
           key: ${{ secrets.SSH_DEPLOY_KEY }}
-          source: |
-            docker/docker-compose.prod.yml
-            .env.example
+          source: docker/docker-compose.prod.yml,.env.example
           target: /home/ghactions/projeto-eq17/
 
       # Script de deploy executado no servidor via SSH.
