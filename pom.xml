@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.5</version>
+        <version>3.5.14</version>
         <relativePath/>
     </parent>
 
@@ -22,12 +22,13 @@
         <java.version>21</java.version>
         <!-- Versões de dependências -->
         <testcontainers.version>1.20.4</testcontainers.version>
-        <webjars-bootstrap.version>5.3.3</webjars-bootstrap.version>
+        <postgresql.version>42.7.11</postgresql.version>
+        <webjars-bootstrap.version>5.3.8</webjars-bootstrap.version>
         <webjars-htmx.version>2.0.4</webjars-htmx.version>
         <!-- Versões de plugins SAST/qualidade -->
         <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
         <findsecbugs-plugin.version>1.13.0</findsecbugs-plugin.version>
-        <dependency-check-maven.version>11.1.1</dependency-check-maven.version>
+        <dependency-check-maven.version>12.2.1</dependency-check-maven.version>
         <versions-maven-plugin.version>2.18.0</versions-maven-plugin.version>
         <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
     </properties>
@@ -102,14 +103,6 @@
             <groupId>org.webjars.npm</groupId>
             <artifactId>htmx.org</artifactId>
             <version>${webjars-htmx.version}</version>
-        </dependency>
-
-        <!-- === DEV TOOLS (apenas desenvolvimento) === -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <scope>runtime</scope>
-            <optional>true</optional>
         </dependency>
 
         <!-- === TESTES === -->
@@ -209,6 +202,8 @@
                         <artifactId>dependency-check-maven</artifactId>
                         <version>${dependency-check-maven.version}</version>
                         <configuration>
+                            <dataDirectory>${user.home}/.dependency-check</dataDirectory>
+                            <nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
                             <failBuildOnCVSS>7</failBuildOnCVSS>
                             <suppressionFiles>
                                 <suppressionFile>owasp-suppressions.xml</suppressionFile>
@@ -223,6 +218,19 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <!-- Perfil 'devtools': use localmente com mvn spring-boot:run -Pdevtools -->
+        <profile>
+            <id>devtools</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-devtools</artifactId>
+                    <scope>runtime</scope>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
         </profile>
 
         <!-- Perfil 'versions': mostra dependências desatualizadas -->
