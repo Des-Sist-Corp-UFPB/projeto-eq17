@@ -240,7 +240,7 @@ Para ativar o deploy, você precisa configurar **dois secrets** e uma **variáve
 O servidor da disciplina (`dsc.rodrigor.com`) já está preparado para receber deploys.
 A chave SSH que autoriza o acesso está disponível na página da disciplina:
 
-**Acesse: https://gd.dsc.rodrigor.com** e copie a chave SSH privada disponibilizada pelo professor.
+**Acesse: https://gd.dsc.rodrigor.com** e copie a chave SSH privada disponibilizada pelo professor. 
 
 Depois, adicione no seu repositório:
 
