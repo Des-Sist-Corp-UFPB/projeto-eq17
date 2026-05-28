@@ -299,6 +299,16 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
 
+      - name: Preparar diretório no servidor
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: dsc.rodrigor.com
+          username: ghactions
+          key: ${{ secrets.SSH_DEPLOY_KEY }}
+          script_stop: true
+          script: |
+            mkdir -p /home/ghactions/projeto-eq17/docker
+
       # Copia o docker-compose.prod.yml e o .env.example para o servidor a cada deploy.
       # Garante que o servidor sempre tem a versão mais recente dos arquivos de configuração.
       - name: Copiar arquivos de configuração para o servidor
