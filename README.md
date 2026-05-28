@@ -108,7 +108,7 @@ Você tem duas opções. **Recomendamos a Opção A para a primeira execução.*
 Um único comando sobe o banco, a aplicação e o Adminer (interface web do banco):
 
 ```bash
-docker compose -f docker/docker-compose.dev.yml up --build
+
 ```
 
 Aguarde as mensagens de inicialização. Quando aparecer algo como:
