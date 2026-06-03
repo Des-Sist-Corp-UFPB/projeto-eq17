@@ -127,7 +127,7 @@ docker compose -f docker/docker-compose.dev.yml up postgres adminer
 
 # Terminal 2 — roda a aplicação (em outro terminal, na mesma pasta)
 mvn spring-boot:run
-```
+``` 
 
 ---
 
