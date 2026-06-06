@@ -11,6 +11,9 @@ spring:
     show-sql: false
   flyway:
     enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: false
+
 
 logging:
   level:
