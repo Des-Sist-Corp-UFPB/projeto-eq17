@@ -232,9 +232,9 @@ O projeto inclui um pipeline de CI/CD em `.github/workflows/deploy.yml` que:
 - constrói a imagem Docker de produção e faz o deploy no servidor da disciplina
 
 Para ativar o deploy, você precisa configurar **dois secrets** e uma **variável** no seu repositório GitHub.
-
+ 
 ---
-
+ 
 ### Secret 1 — Chave SSH de deploy (`SSH_DEPLOY_KEY`)
 
 O servidor da disciplina (`dsc.rodrigor.com`) já está preparado para receber deploys.
