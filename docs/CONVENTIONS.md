@@ -4,9 +4,9 @@
 
 ```
 V{número}__{descrição_com_underscores}.sql
-V1__criar_tabela_produto.sql
-V2__adicionar_indice_preco.sql
-V3__criar_tabela_categoria.sql
+V1__criar_tabela_casa.sql
+V2__adicionar_indice_email.sql
+V3__criar_tabela_tarefa.sql
 ```
 
 - Nunca editar uma migration já commitada
@@ -16,11 +16,11 @@ V3__criar_tabela_categoria.sql
 ## Conventional Commits
 
 ```
-feat: adicionar filtro por categoria de produto
-fix: corrigir cálculo de desconto no preço
+feat: adicionar filtro por status de despesa
+fix: corrigir cálculo de rateio de despesa
 docs: atualizar README com instruções de deploy
-refactor: extrair validação de preço para método privado
-test: adicionar teste de integração para ProdutoService
+refactor: extrair validação de despesa para método privado
+test: adicionar teste de integração para CasaService
 chore: atualizar dependências do pom.xml
 ```
 
@@ -28,11 +28,11 @@ chore: atualizar dependências do pom.xml
 
 | Elemento | Convenção | Exemplo |
 |---|---|---|
-| Package | lowercase | `br.ufpb.dsc.mercado.service` |
-| Classe | PascalCase | `ProdutoService` |
+| Package | lowercase | `br.ufpb.dsc.republica.service` |
+| Classe | PascalCase | `CasaService` |
 | Método | camelCase | `buscarPorId()` |
 | Constante | UPPER_SNAKE | `MAX_NOME_LENGTH` |
-| Variável | camelCase | `produtoForm` |
+| Variável | camelCase | `casaForm` |
 
 ## Padrão de Fragment HTMX
 
@@ -53,3 +53,4 @@ Templates em `templates/{entidade}/fragments/`:
 - Nunca concatenar strings em queries JPA (use parâmetros nomeados)
 - Variáveis sensíveis em `.env` (nunca hardcoded)
 - CSRF: habilitado por padrão, desabilitado apenas para endpoints HTMX específicos
+

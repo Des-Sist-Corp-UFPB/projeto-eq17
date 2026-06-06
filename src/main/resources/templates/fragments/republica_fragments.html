@@ -1,0 +1,237 @@
+<!-- FRAGMENTOS DO SISTEMA DE GESTÃO DE REPÚBLICAS -->
+<div xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+    <!-- 1. FRAGMENTO: LISTA DE MORADORES -->
+    <div th:fragment="lista-moradores">
+        <!-- Notificações de erro ou sucesso no convite -->
+        <div class="alert alert-success py-2 small mb-3" th:if="${conviteSucesso}" th:text="${conviteSucesso}">Sucesso</div>
+        <div class="alert alert-danger py-2 small mb-3" th:if="${conviteErro}" th:text="${conviteErro}">Erro</div>
+
+        <div class="table-responsive bg-white rounded border">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Nome</th>
+                        <th>E-mail</th>
+                        <th>Função</th>
+                        <th class="pe-3 text-end">Adicionado em</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="morador : ${moradores}">
+                        <td class="ps-3 fw-semibold text-dark">
+                            <span th:text="${morador.usuario.nome}">Nome</span>
+                        </td>
+                        <td th:text="${morador.usuario.email}">email@domain.com</td>
+                        <td>
+                            <span class="badge" 
+                                  th:classappend="${morador.papel.name() == 'ADMINISTRADOR'} ? 'bg-primary-subtle text-primary' : 'bg-secondary-subtle text-secondary'"
+                                  th:text="${morador.papel.descricao}">Função</span>
+                        </td>
+                        <td class="pe-3 text-end text-muted small" th:text="${#temporals.format(morador.criadoEm, 'dd/MM/yyyy HH:mm')}">Data</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 2. FRAGMENTO: LISTA DE DESPESAS -->
+    <div th:fragment="lista-despesas" class="table-responsive bg-white rounded border">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Descrição</th>
+                    <th>Valor Total</th>
+                    <th>Vencimento</th>
+                    <th>Responsável</th>
+                    <th>Status</th>
+                    <th class="pe-3 text-end">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:if="${despesas.isEmpty()}">
+                    <td colspan="6" class="text-center text-muted py-4 small">Nenhuma despesa ativa lançada nesta república.</td>
+                </tr>
+                <tr th:each="despesa : ${despesas}">
+                    <td class="ps-3 fw-semibold text-dark" th:text="${despesa.descricao}">Conta de Luz</td>
+                    <td class="fw-semibold text-primary" th:text="'R$ ' + ${despesa.valorTotal}">R$ 0,00</td>
+                    <td th:text="${#temporals.format(despesa.vencimento, 'dd/MM/yyyy')}">01/01/2026</td>
+                    <td th:text="${despesa.responsavel.usuario.nome}">Responsável</td>
+                    <td>
+                        <span class="badge" 
+                              th:classappend="${despesa.status.name() == 'PAGA'} ? 'bg-success' : 
+                                              (${despesa.status.name() == 'PENDENTE'} ? 'bg-warning text-dark' : 
+                                              (${despesa.status.name() == 'PARCIALMENTE_PAGA'} ? 'bg-info text-dark' : 'bg-danger'))"
+                              th:text="${despesa.status.descricao}">Status</span>
+                    </td>
+                    <td class="pe-3 text-end">
+                        <div class="d-inline-flex gap-2">
+                            <!-- Botão que abre os rateios via HTMX no modal container global -->
+                            <button class="btn btn-sm btn-outline-primary"
+                                    th:hx-get="@{/despesas/{id}/rateios(id=${despesa.id})}"
+                                    hx-target="#modal-container"
+                                    hx-swap="innerHTML">
+                                Ver Divisão
+                            </button>
+
+                            <!-- Botão de Excluir (apenas se for admin) -->
+                            <button class="btn btn-sm btn-outline-danger" th:if="${moradorLogado.papel.name() == 'ADMINISTRADOR'}"
+                                    th:hx-post="@{/despesas/{id}/excluir(id=${despesa.id})}"
+                                    hx-target="#secao-despesas"
+                                    hx-swap="innerHTML"
+                                    hx-confirm="Tem certeza que deseja excluir esta despesa?">
+                                Excluir
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 3. FRAGMENTO: LISTA DE TAREFAS -->
+    <div th:fragment="lista-tarefas" class="table-responsive bg-white rounded border">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3" style="width: 40px;"></th>
+                    <th>Tarefa</th>
+                    <th>Responsável</th>
+                    <th>Status</th>
+                    <th class="pe-3 text-end">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:if="${tarefas.isEmpty()}">
+                    <td colspan="5" class="text-center text-muted py-4 small">Nenhuma tarefa cadastrada.</td>
+                </tr>
+                <tr th:each="tarefa : ${tarefas}" th:classappend="${tarefa.status.name() == 'CONCLUIDA'} ? 'table-light text-muted' : ''">
+                    <!-- Checkbox de Status Rápido via HTMX -->
+                    <td class="ps-3">
+                        <input class="form-check-input" type="checkbox" 
+                               th:checked="${tarefa.status.name() == 'CONCLUIDA'}"
+                               th:hx-post="@{/tarefas/{id}/status(id=${tarefa.id}, status=${tarefa.status.name() == 'CONCLUIDA' ? 'PENDENTE' : 'CONCLUIDA'})}"
+                               hx-target="#secao-tarefas"
+                               hx-swap="innerHTML"/>
+                    </td>
+                    <td class="fw-semibold">
+                        <span th:text="${tarefa.descricao}" th:style="${tarefa.status.name() == 'CONCLUIDA'} ? 'text-decoration: line-through;' : ''">Descrição</span>
+                    </td>
+                    <td>
+                        <span th:text="${tarefa.responsavel != null ? tarefa.responsavel.usuario.nome : 'Pendente'}"
+                              class="text-secondary small">Responsável</span>
+                    </td>
+                    <td>
+                        <span class="badge" 
+                              th:classappend="${tarefa.status.name() == 'CONCLUIDA'} ? 'bg-success' : 
+                                              (${tarefa.status.name() == 'EM_ANDAMENTO'} ? 'bg-info text-dark' : 'bg-warning text-dark')"
+                              th:text="${tarefa.status.descricao}">Status</span>
+                    </td>
+                    <td class="pe-3 text-end">
+                        <!-- Botão de Deletar Tarefa -->
+                        <button class="btn btn-sm btn-link text-danger p-0 border-0"
+                                th:hx-post="@{/tarefas/{id}/excluir(id=${tarefa.id})}"
+                                hx-target="#secao-tarefas"
+                                hx-swap="innerHTML">
+                            Excluir
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 4. FRAGMENTO: MODAL COMPLETO DE DETALHES DE DESPESA (RATEIO) -->
+    <div th:fragment="detalhes-despesa-modal" class="modal fade" id="detalhesDespesaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content shadow rounded-3 border-0">
+                <div class="modal-header border-bottom-0 pt-4 px-4">
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark" th:text="${despesa.descricao}">Descrição</h5>
+                        <p class="text-muted small mb-0" th:text="'Valor Total: R$ ' + ${despesa.valorTotal} + ' | Vencimento: ' + ${#temporals.format(despesa.vencimento, 'dd/MM/yyyy')}">Detalhes</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <!-- O corpo será atualizado dinamicamente -->
+                <div class="modal-body px-4" id="corpo-modal-rateio">
+                    <div th:replace="~{fragments/republica_fragments :: detalhes-despesa-corpo}"></div>
+                </div>
+                <div class="modal-footer border-top-0 pb-4 px-4">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. FRAGMENTO: CORPO DO MODAL DE RATEIO (ATUALIZADO ASSINCRONAMENTE) -->
+    <div th:fragment="detalhes-despesa-corpo">
+        <h6 class="fw-bold mb-3 text-dark">Divisão por Morador</h6>
+        <div class="list-group">
+            <div th:each="rateio : ${despesa.rateios}" class="list-group-item p-3 border rounded-3 mb-2 bg-light-subtle">
+                <div class="row align-items-center">
+                    <div class="col-md-5">
+                        <span class="fw-semibold text-dark d-block" th:text="${rateio.morador.usuario.nome}">Nome Morador</span>
+                        <span class="text-secondary small" th:text="${rateio.morador.usuario.email}">email@domain.com</span>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="fw-bold text-primary" th:text="'R$ ' + ${rateio.valorDevido}">R$ 0,00</span>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                        <span class="badge px-3 py-2"
+                              th:classappend="${rateio.ultimoPagamento != null and rateio.ultimoPagamento.status.name() == 'CONFIRMADO'} ? 'bg-success' :
+                                              (${rateio.ultimoPagamento != null and rateio.ultimoPagamento.status.name() == 'INFORMADO'} ? 'bg-info text-dark' :
+                                              (${rateio.ultimoPagamento != null and rateio.ultimoPagamento.status.name() == 'REJEITADO'} ? 'bg-danger' : 'bg-warning text-dark'))"
+                              th:text="${rateio.ultimoPagamento != null ? rateio.ultimoPagamento.status.descricao : 'Pendente'}">Status</span>
+                    </div>
+                </div>
+
+                <!-- Submissão de Comprovante pelo Morador Logado -->
+                <!-- Condição: se o rateio for deste morador logado E não estiver pago/informado -->
+                <div class="mt-3 p-3 bg-white rounded border border-light" 
+                     th:if="${rateio.morador.id == moradorLogado.id and (rateio.ultimoPagamento == null or rateio.ultimoPagamento.status.name() == 'PENDENTE' or rateio.ultimoPagamento.status.name() == 'REJEITADO')}">
+                    <h6 class="small fw-bold text-dark">Informar Transferência</h6>
+                    <form th:hx-post="@{/despesas/rateio/{rateioId}/pagar-htmx(rateioId=${rateio.id})}" 
+                          hx-target="#corpo-modal-rateio"
+                          hx-swap="innerHTML"
+                          class="row g-2 align-items-center mt-1">
+                        <div class="col-sm-8">
+                            <input type="text" name="comprovante" class="form-control form-control-sm" 
+                                   placeholder="Pix ID, link do arquivo ou anotação" required/>
+                        </div>
+                        <div class="col-sm-4">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">Enviar Comprovante</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Exibição do Comprovante e Controle do Responsável -->
+                <!-- Condição: se o status for INFORMADO e o usuário logado for o responsável centralizador da despesa -->
+                <div class="mt-3 p-3 bg-light-subtle rounded border border-info" 
+                     th:if="${rateio.ultimoPagamento != null and rateio.ultimoPagamento.status.name() == 'INFORMADO'}">
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center">
+                        <div>
+                            <span class="small fw-semibold d-block text-secondary">Comprovante enviado:</span>
+                            <code class="text-dark" th:text="${rateio.ultimoPagamento.comprovante}">comprovante-123</code>
+                        </div>
+                        <!-- Ações para o responsável confirmar/rejeitar -->
+                        <div class="d-flex gap-2 mt-2 mt-sm-0" th:if="${despesa.responsavel.id == moradorLogado.id}">
+                            <button class="btn btn-success btn-sm"
+                                    th:hx-post="@{/despesas/pagamento/{id}/confirmar(id=${rateio.ultimoPagamento.id})}"
+                                    hx-target="#corpo-modal-rateio"
+                                    hx-swap="innerHTML">
+                                Confirmar
+                            </button>
+                            <button class="btn btn-danger btn-sm"
+                                    th:hx-post="@{/despesas/pagamento/{id}/rejeitar(id=${rateio.ultimoPagamento.id})}"
+                                    hx-target="#corpo-modal-rateio"
+                                    hx-swap="innerHTML">
+                                Rejeitar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

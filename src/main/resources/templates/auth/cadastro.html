@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Login — HomeHub</title>
+    <title>Cadastro — HomeHub</title>
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,13 +21,13 @@
             justify-content: center;
         }
 
-        .login-card {
+        .register-card {
             border: none;
             border-radius: 16px;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.15);
             background-color: #ffffff;
             width: 100%;
-            max-width: 440px;
+            max-width: 460px;
             padding: 2.5rem;
         }
 
@@ -66,19 +66,24 @@
             box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.15);
         }
 
-        .register-link {
+        .login-link {
             color: #1a237e;
             text-decoration: none;
             font-weight: 600;
         }
-        .register-link:hover {
+        .login-link:hover {
             text-decoration: underline;
+        }
+        .error-message {
+            font-size: 0.775rem;
+            color: #dc3545;
+            margin-top: 0.25rem;
         }
     </style>
 </head>
 <body>
 
-<div class="login-card">
+<div class="register-card">
     <div class="brand-logo">
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" 
              class="bi bi-houses-fill me-2" viewBox="0 0 16 16">
@@ -87,42 +92,42 @@
         HomeHub
     </div>
 
-    <h4 class="text-center mb-4 fw-bold text-dark">Entrar na sua conta</h4>
+    <h4 class="text-center mb-4 fw-bold text-dark">Criar nova conta</h4>
 
-    <!-- Alertas -->
-    <div class="alert alert-danger py-2 small" role="alert" th:if="${param.error}">
-        E-mail ou senha inválidos. Tente novamente.
-    </div>
-
-    <div class="alert alert-success py-2 small" role="alert" th:if="${param.logout}">
-        Você saiu da conta com sucesso.
-    </div>
-
-    <div class="alert alert-success py-2 small" role="alert" th:if="${param.cadastroSucesso}">
-        Conta criada com sucesso! Faça login abaixo.
+    <!-- Erros globais do fluxo -->
+    <div class="alert alert-danger py-2 small" role="alert" th:if="${cadastroErro}">
+        <span th:text="${cadastroErro}">Erro ao cadastrar</span>
     </div>
 
     <!-- Formulário -->
-    <form th:action="@{/login}" method="post">
+    <form th:action="@{/cadastro}" th:object="${usuarioForm}" method="post">
+        
         <div class="mb-3">
-            <label for="username" class="form-label small fw-semibold text-secondary">E-mail</label>
-            <input type="email" class="form-control" id="username" name="username" 
-                   placeholder="exemplo@email.com" required autofocus/>
+            <label for="nome" class="form-label small fw-semibold text-secondary">Nome Completo</label>
+            <input type="text" class="form-control" id="nome" th:field="*{nome}" 
+                   placeholder="Digite seu nome" required/>
+            <div class="error-message" th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}">Erro nome</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="email" class="form-label small fw-semibold text-secondary">E-mail</label>
+            <input type="email" class="form-control" id="email" th:field="*{email}" 
+                   placeholder="exemplo@email.com" required/>
+            <div class="error-message" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">Erro email</div>
         </div>
 
         <div class="mb-4">
-            <div class="d-flex justify-content-between">
-                <label for="password" class="form-label small fw-semibold text-secondary">Senha</label>
-            </div>
-            <input type="password" class="form-control" id="password" name="password" 
-                   placeholder="Digite sua senha" required/>
+            <label for="senha" class="form-label small fw-semibold text-secondary">Senha (mínimo 6 caracteres)</label>
+            <input type="password" class="form-control" id="senha" th:field="*{senha}" 
+                   placeholder="Escolha uma senha forte" required/>
+            <div class="error-message" th:if="${#fields.hasErrors('senha')}" th:errors="*{senha}">Erro senha</div>
         </div>
 
-        <button type="submit" class="btn btn-primary w-100 mb-3">Entrar</button>
+        <button type="submit" class="btn btn-primary w-100 mb-3">Registrar-se</button>
     </form>
 
     <div class="text-center mt-3 small text-muted">
-        Ainda não tem conta? <a th:href="@{/cadastro}" class="register-link">Cadastre-se</a>
+        Já possui conta? <a th:href="@{/login}" class="login-link">Fazer login</a>
     </div>
 </div>
 

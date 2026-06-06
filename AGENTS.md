@@ -1,4 +1,4 @@
-# AI Agents Context — Mercado DSC/UFPB
+# AI Agents Context — HomeHub DSC/UFPB
 
 > Este arquivo fornece contexto para ferramentas de IA (Cursor, GitHub Copilot, etc.)
 > Para Claude Code, veja CLAUDE.md (mais completo).
@@ -7,7 +7,7 @@
 Boilerplate Spring Boot para disciplina universitária. Java 21, Spring Boot 3.4.5, PostgreSQL, Thymeleaf+HTMX+Bootstrap.
 
 ## Pacote base
-`br.ufpb.dsc.mercado`
+`br.ufpb.dsc.republica`
 
 ## Padrões importantes
 - DTOs são Records Java imutáveis
@@ -27,10 +27,10 @@ docker compose -f docker/docker-compose.dev.yml up  # ambiente completo
 
 Leia `docs/ARCHITECTURE.md` para detalhes arquiteturais.
 
-# Memória do Projeto — Mercado DSC/UFPB
+# Memória do Projeto — HomeHub DSC/UFPB
 
 ## Identidade do Projeto
-- **Nome**: Sistema Mercado — Projeto Base DSC
+- **Nome**: HomeHub — Gestão de Repúblicas Universitárias
 - **Disciplina**: Desenvolvimento de Sistemas Corporativos
 - **Professor**: Rodrigo Rebouças
 - **Instituição**: Universidade Federal da Paraíba — Campus IV
@@ -51,7 +51,7 @@ Leia `docs/ARCHITECTURE.md` para detalhes arquiteturais.
 
 ## Estrutura de Pacotes
 ```
-br.ufpb.dsc.mercado
+br.ufpb.dsc.republica
 ├── config/          # Configurações Spring (Security, Web, etc.)
 ├── controller/      # Controllers MVC (recebem requests HTTP)
 ├── domain/          # Entidades JPA (mapeamento objeto-relacional)
@@ -96,14 +96,14 @@ mvn versions:display-dependency-updates -Pversions
 docker compose -f docker/docker-compose.dev.yml --profile scan up trivy
 
 # Trivy scan da imagem (depois de fazer o build)
-docker build -f docker/Dockerfile -t mercado:latest .
-docker run --rm aquasec/trivy image mercado:latest
+docker build -f docker/Dockerfile -t republica:latest .
+docker run --rm aquasec/trivy image republica:latest
 ```
 
 ### Produção
 ```bash
 # Build imagem de produção
-docker build -f docker/Dockerfile -t mercado:latest .
+docker build -f docker/Dockerfile -t republica:latest .
 
 # Subir produção (requer .env configurado)
 docker compose -f docker/docker-compose.prod.yml up -d
@@ -143,13 +143,14 @@ SpotBugs e OWASP Dependency-Check são lentos. Separar em perfil permite que o b
 | SpotBugs + FindSecBugs | SAST bytecode Java | `mvn verify -Psecurity` |
 | Semgrep | SAST código-fonte | `semgrep --config=auto src/` |
 | Trivy (fs) | Vulnerabilidades em libs | docker compose `--profile scan` |
-| Trivy (image) | Vulnerabilidades na imagem Docker | `trivy image mercado:latest` |
+| Trivy (image) | Vulnerabilidades na imagem Docker | `trivy image republica:latest` |
 | OWASP Dependency-Check | CVEs em dependências | `mvn verify -Psecurity` |
 
 ## Para Alunos: Próximos Passos Sugeridos
-1. Renomear `Produto` para sua entidade principal
+1. Personalizar e estender as entidades de domínio
 2. Adicionar campos específicos do seu domínio
 3. Criar novas migrations Flyway para as alterações no banco
 4. Adicionar novos controllers seguindo o padrão HTMX
 5. Configurar autenticação baseada em banco de dados
 6. Adicionar testes para cada service criado
+
