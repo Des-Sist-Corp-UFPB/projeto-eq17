@@ -46,21 +46,16 @@ public class SecurityConfig {
 
                 // === AUTORIZAÇÃO DE REQUISIÇÕES ===
                 .authorizeHttpRequests(auth -> auth
-                        // Recursos estáticos da SPA, login, cadastro e health check são públicos
-                        .requestMatchers(
-                                "/api/auth/login",
-                                "/api/auth/register",
-                                "/actuator/health",
-                                "/ping",
-                                "/",
-                                "/index.html",
-                                "/assets/**",
-                                "/css/**",
-                                "/js/**",
-                                "/favicon.ico"
-                        ).permitAll()
-                        // Qualquer outra requisição exige autenticação
-                        .anyRequest().authenticated()
+                        // Endpoints públicos básicos do sistema
+                        .requestMatchers("/actuator/health", "/ping").permitAll()
+                        // Outros endpoints do Actuator exigem autenticação
+                        .requestMatchers("/actuator/**").authenticated()
+                        // Endpoints públicos da API de Autenticação
+                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                        // Outros endpoints da API exigem autenticação
+                        .requestMatchers("/api/**").authenticated()
+                        // Qualquer outra requisição (páginas da SPA, CSS, JS, etc.) é pública
+                        .anyRequest().permitAll()
                 )
 
                 // === FORMULÁRIO DE LOGIN REST ===
