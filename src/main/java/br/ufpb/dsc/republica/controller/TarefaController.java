@@ -3,96 +3,84 @@ package br.ufpb.dsc.republica.controller;
 import br.ufpb.dsc.republica.domain.Morador;
 import br.ufpb.dsc.republica.domain.StatusTarefa;
 import br.ufpb.dsc.republica.domain.Tarefa;
-import br.ufpb.dsc.republica.domain.Usuario;
+import br.ufpb.dsc.republica.dto.MoradorDto;
+import br.ufpb.dsc.republica.dto.TarefaDto;
 import br.ufpb.dsc.republica.dto.TarefaForm;
-import br.ufpb.dsc.republica.service.CasaService;
 import br.ufpb.dsc.republica.service.TarefaService;
-import br.ufpb.dsc.republica.service.UsuarioService;
 import jakarta.validation.Valid;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
-import java.util.List;
+import java.util.Map;
 
-@Controller
-@RequestMapping("/tarefas")
+/**
+ * Controller REST para tarefas.
+ */
+@RestController
+@RequestMapping("/api/tarefas")
 public class TarefaController {
 
     private final TarefaService tarefaService;
-    private final CasaService casaService;
-    private final UsuarioService usuarioService;
 
-    public TarefaController(TarefaService tarefaService, CasaService casaService, UsuarioService usuarioService) {
+    public TarefaController(TarefaService tarefaService) {
         this.tarefaService = tarefaService;
-        this.casaService = casaService;
-        this.usuarioService = usuarioService;
     }
 
+    /**
+     * Cadastra uma nova tarefa na casa.
+     */
     @PostMapping("/casa/{casaId}")
-    public String cadastrarTarefa(@PathVariable("casaId") Long casaId,
-                                  @Valid @ModelAttribute("tarefaForm") TarefaForm form,
-                                  BindingResult bindingResult,
-                                  Model model,
-                                  Principal principal) {
-        if (!bindingResult.hasErrors()) {
-            try {
-                tarefaService.criarTarefa(casaId, form);
-            } catch (Exception e) {
-                model.addAttribute("erroTarefa", e.getMessage());
-            }
+    public ResponseEntity<TarefaDto> cadastrarTarefa(@PathVariable("casaId") Long casaId,
+                                                     @Valid @RequestBody TarefaForm form) {
+        Tarefa tarefa = tarefaService.criarTarefa(casaId, form);
+        return ResponseEntity.ok(toTarefaDto(tarefa));
+    }
+
+    /**
+     * Altera o status de uma tarefa.
+     */
+    @PutMapping("/{id}/status")
+    public ResponseEntity<TarefaDto> alterarStatus(@PathVariable("id") Long id,
+                                                   @RequestBody Map<String, String> payload) {
+        String statusStr = payload.get("status");
+        if (statusStr == null || statusStr.trim().isEmpty()) {
+            throw new IllegalArgumentException("O status é obrigatório.");
         }
 
-        // Retorna a lista atualizada de tarefas via fragmento
-        List<Tarefa> tarefas = tarefaService.buscarTarefasPorCasa(casaId);
-        Usuario usuario = usuarioService.buscarPorEmail(principal.getName()).orElseThrow();
-        Morador moradorLogado = casaService.buscarMoradorPorUsuarioECasa(casaId, usuario.getId());
-
-        model.addAttribute("tarefas", tarefas);
-        model.addAttribute("moradorLogado", moradorLogado);
-
-        return "fragments/republica_fragments :: lista-tarefas";
-    }
-
-    @PostMapping("/{id}/status")
-    public String alterarStatus(@PathVariable("id") Long id,
-                                @RequestParam("status") StatusTarefa status,
-                                Model model,
-                                Principal principal) {
+        StatusTarefa status = StatusTarefa.valueOf(statusStr);
         Tarefa tarefa = tarefaService.alterarStatus(id, status);
-        Long casaId = tarefa.getCasa().getId();
-
-        // Retorna a lista atualizada de tarefas
-        List<Tarefa> tarefas = tarefaService.buscarTarefasPorCasa(casaId);
-        Usuario usuario = usuarioService.buscarPorEmail(principal.getName()).orElseThrow();
-        Morador moradorLogado = casaService.buscarMoradorPorUsuarioECasa(casaId, usuario.getId());
-
-        model.addAttribute("tarefas", tarefas);
-        model.addAttribute("moradorLogado", moradorLogado);
-
-        return "fragments/republica_fragments :: lista-tarefas";
+        return ResponseEntity.ok(toTarefaDto(tarefa));
     }
 
-    @PostMapping("/{id}/excluir")
-    public String excluirTarefa(@PathVariable("id") Long id,
-                                Model model,
-                                Principal principal) {
-        Tarefa tarefa = tarefaService.buscarPorId(id);
-        Long casaId = tarefa.getCasa().getId();
-        
+    /**
+     * Exclui uma tarefa da casa.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> excluirTarefa(@PathVariable("id") Long id) {
         tarefaService.excluirTarefa(id);
+        return ResponseEntity.ok(Map.of("mensagem", "Tarefa excluída com sucesso."));
+    }
 
-        // Retorna a lista atualizada de tarefas
-        List<Tarefa> tarefas = tarefaService.buscarTarefasPorCasa(casaId);
-        Usuario usuario = usuarioService.buscarPorEmail(principal.getName()).orElseThrow();
-        Morador moradorLogado = casaService.buscarMoradorPorUsuarioECasa(casaId, usuario.getId());
+    private TarefaDto toTarefaDto(Tarefa t) {
+        return new TarefaDto(
+                t.getId(),
+                t.getDescricao(),
+                t.getStatus(),
+                toMoradorDto(t.getResponsavel())
+        );
+    }
 
-        model.addAttribute("tarefas", tarefas);
-        model.addAttribute("moradorLogado", moradorLogado);
-
-        return "fragments/republica_fragments :: lista-tarefas";
+    private MoradorDto toMoradorDto(Morador m) {
+        if (m == null) {
+            return null;
+        }
+        return new MoradorDto(
+                m.getId(),
+                m.getUsuario().getNome(),
+                m.getUsuario().getEmail(),
+                m.getPapel()
+        );
     }
 }
+
 

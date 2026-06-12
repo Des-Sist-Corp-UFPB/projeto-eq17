@@ -1,0 +1,292 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Mono&display=swap');
+
+:root {
+  /* Fonts */
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+
+  /* Premium Light Theme Palette */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+  
+  /* Striking Accent Colors */
+  --color-accent-blue: #4f46e5;     /* Vibrant Cobalt Indigo (Main Accent) */
+  --color-accent-orange: #e11d48;   /* Vibrant Rose (Secondary Accent) */
+  --color-accent-purple: #7c3aed;   /* Elegant Violet */
+  
+  /* Status Colors */
+  --color-success: #10b981;         /* Emerald Green */
+  --color-warning: #f59e0b;         /* Warm Amber */
+  --color-danger: #ef4444;          /* Soft Red */
+  
+  /* Typography Colors */
+  --text-primary: #0f172a;          /* Deep Slate */
+  --text-secondary: #475569;        /* Medium Slate */
+  --text-muted: #94a3b8;            /* Cool Gray */
+  
+  /* Borders & Shadows */
+  --border-muted: #e2e8f0;          /* Clean Light Border */
+  --border-focus: #a5b4fc;          /* Indigo Focus Ring Border */
+  
+  --shadow-cyber: 0 10px 25px -5px rgba(15, 23, 42, 0.03), 0 8px 10px -6px rgba(15, 23, 42, 0.03), 0 1px 3px rgba(15, 23, 42, 0.01);
+  --shadow-orange: 0 10px 25px -5px rgba(225, 29, 72, 0.05), 0 8px 10px -6px rgba(225, 29, 72, 0.05);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Subtle gradient accent highlights on the page */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  background-image: 
+    radial-gradient(circle at 0% 0%, rgba(79, 70, 229, 0.03) 0%, transparent 45%),
+    radial-gradient(circle at 100% 100%, rgba(225, 29, 72, 0.02) 0%, transparent 45%);
+  background-size: 100% 100%;
+  pointer-events: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent-blue);
+}
+
+/* Clean Minimalist Cards */
+.cyber-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-muted);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: var(--shadow-cyber);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Striking top accent line on cards */
+.cyber-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-accent-blue), var(--color-accent-orange));
+  opacity: 0.85;
+  transition: all 0.3s ease;
+}
+
+.cyber-card:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.04), 0 8px 10px -6px rgba(79, 70, 229, 0.04);
+}
+
+/* Inputs & Forms */
+.cyber-input-group {
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.cyber-input-label {
+  display: block;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+
+.cyber-input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-muted);
+  border-radius: 10px;
+  padding: 14px 18px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.cyber-input:focus {
+  outline: none;
+  border-color: var(--color-accent-blue);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+}
+
+.cyber-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Elegant Buttons */
+.cyber-btn {
+  background: var(--color-accent-blue);
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.1), 0 2px 4px -2px rgba(79, 70, 229, 0.1);
+}
+
+.cyber-btn:hover {
+  transform: translateY(-1px);
+  background: #3b30d8; /* Slightly darker indigo */
+  box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.25), 0 4px 6px -2px rgba(79, 70, 229, 0.15);
+}
+
+.cyber-btn:active {
+  transform: translateY(0);
+}
+
+.cyber-btn-secondary {
+  background: transparent;
+  color: var(--color-accent-blue);
+  border: 1px solid var(--color-accent-blue);
+  box-shadow: none;
+}
+
+.cyber-btn-secondary:hover {
+  background: rgba(79, 70, 229, 0.05);
+  border-color: #3b30d8;
+  color: #3b30d8;
+  box-shadow: none;
+}
+
+.cyber-btn-orange {
+  background: var(--color-accent-orange);
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(225, 29, 72, 0.1), 0 2px 4px -2px rgba(225, 29, 72, 0.1);
+}
+
+.cyber-btn-orange:hover {
+  background: #cb133d; /* Slightly darker rose */
+  box-shadow: 0 10px 15px -3px rgba(225, 29, 72, 0.25), 0 4px 6px -2px rgba(225, 29, 72, 0.15);
+}
+
+.cyber-btn-danger {
+  background: var(--color-danger);
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.1), 0 2px 4px -2px rgba(239, 68, 68, 0.1);
+}
+
+.cyber-btn-danger:hover {
+  background: #dc2626;
+  box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.25), 0 4px 6px -2px rgba(239, 68, 68, 0.15);
+}
+
+.cyber-btn:disabled {
+  background: #f1f5f9;
+  color: var(--text-muted);
+  border: 1px solid var(--border-muted);
+  cursor: not-allowed;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Badges & Tags */
+.cyber-badge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 9999px; /* Rounded pill style */
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cyber-badge-blue {
+  background: rgba(79, 70, 229, 0.08);
+  color: var(--color-accent-blue);
+}
+
+.cyber-badge-orange {
+  background: rgba(225, 29, 72, 0.08);
+  color: var(--color-accent-orange);
+}
+
+.cyber-badge-success {
+  background: rgba(16, 185, 129, 0.08);
+  color: var(--color-success);
+}
+
+.cyber-badge-danger {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--color-danger);
+}
+
+/* Layout Utilities */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.glow-text {
+  text-shadow: none;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, var(--color-accent-blue), var(--color-accent-orange));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

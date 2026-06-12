@@ -1,18 +1,21 @@
 package br.ufpb.dsc.republica.controller;
 
+import br.ufpb.dsc.republica.domain.Usuario;
+import br.ufpb.dsc.republica.dto.UsuarioDto;
 import br.ufpb.dsc.republica.dto.UsuarioForm;
 import br.ufpb.dsc.republica.service.UsuarioService;
 import jakarta.validation.Valid;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Controller
-@RequestMapping("/cadastro")
+/**
+ * Controller de cadastro REST.
+ */
+@RestController
+@RequestMapping("/api/auth/register")
 public class CadastroController {
 
     private final UsuarioService usuarioService;
@@ -21,27 +24,14 @@ public class CadastroController {
         this.usuarioService = usuarioService;
     }
 
-    @GetMapping
-    public String exibirFormulario(Model model) {
-        model.addAttribute("usuarioForm", new UsuarioForm("", "", ""));
-        return "auth/cadastro";
-    }
-
+    /**
+     * Cadastra um novo usuário no sistema.
+     */
     @PostMapping
-    public String cadastrar(@Valid @ModelAttribute("usuarioForm") UsuarioForm form,
-                            BindingResult bindingResult,
-                            Model model) {
-        if (bindingResult.hasErrors()) {
-            return "auth/cadastro";
-        }
-
-        try {
-            usuarioService.cadastrar(form);
-            return "redirect:/login?cadastroSucesso";
-        } catch (IllegalArgumentException e) {
-            model.addAttribute("cadastroErro", e.getMessage());
-            return "auth/cadastro";
-        }
+    public ResponseEntity<UsuarioDto> cadastrar(@Valid @RequestBody UsuarioForm form) {
+        Usuario usuario = usuarioService.cadastrar(form);
+        return ResponseEntity.ok(new UsuarioDto(usuario.getId(), usuario.getNome(), usuario.getEmail()));
     }
 }
+
 

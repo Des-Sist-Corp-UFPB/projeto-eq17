@@ -5,26 +5,24 @@ import br.ufpb.dsc.republica.domain.Despesa;
 import br.ufpb.dsc.republica.domain.Morador;
 import br.ufpb.dsc.republica.domain.Tarefa;
 import br.ufpb.dsc.republica.domain.Usuario;
-import br.ufpb.dsc.republica.dto.CasaForm;
-import br.ufpb.dsc.republica.dto.DespesaForm;
-import br.ufpb.dsc.republica.dto.TarefaForm;
+import br.ufpb.dsc.republica.dto.*;
 import br.ufpb.dsc.republica.service.CasaService;
 import br.ufpb.dsc.republica.service.DespesaService;
 import br.ufpb.dsc.republica.service.TarefaService;
 import br.ufpb.dsc.republica.service.UsuarioService;
 import jakarta.validation.Valid;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.security.Principal;
-import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
-@Controller
-@RequestMapping("/casas")
+/**
+ * Controller REST para gerenciar repúblicas/casas.
+ */
+@RestController
+@RequestMapping("/api/casas")
 public class CasaController {
 
     private final CasaService casaService;
@@ -40,25 +38,27 @@ public class CasaController {
         this.usuarioService = usuarioService;
     }
 
+    /**
+     * Cria uma nova casa/república e define o criador como ADMINISTRADOR.
+     */
     @PostMapping
-    public String criarCasa(@Valid @ModelAttribute("casaForm") CasaForm form,
-                            BindingResult bindingResult,
-                            Principal principal,
-                            Model model) {
-        if (bindingResult.hasErrors()) {
-            return "redirect:/dashboard?erroCriarCasa";
+    public ResponseEntity<CasaDto> criarCasa(@Valid @RequestBody CasaForm form, Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
         }
-
-        try {
-            Casa casa = casaService.criarCasa(form, principal.getName());
-            return "redirect:/casas/" + casa.getId();
-        } catch (Exception e) {
-            return "redirect:/dashboard?erro=" + e.getMessage();
-        }
+        Casa casa = casaService.criarCasa(form, principal.getName());
+        return ResponseEntity.ok(new CasaDto(casa.getId(), casa.getNome(), casa.getEndereco(), casa.getCriadoEm()));
     }
 
+    /**
+     * Retorna todos os detalhes de uma casa (moradores, despesas, tarefas).
+     */
     @GetMapping("/{id}")
-    public String exibirDetalhes(@PathVariable("id") Long id, Model model, Principal principal) {
+    public ResponseEntity<DetalhesCasaResponse> exibirDetalhes(@PathVariable("id") Long id, Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).build();
+        }
+
         Usuario usuario = usuarioService.buscarPorEmail(principal.getName())
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
 
@@ -69,38 +69,78 @@ public class CasaController {
         List<Despesa> despesas = despesaService.buscarDespesasPorCasa(id);
         List<Tarefa> tarefas = tarefaService.buscarTarefasPorCasa(id);
 
-        model.addAttribute("casa", casa);
-        model.addAttribute("moradorLogado", moradorLogado);
-        model.addAttribute("moradores", moradores);
-        model.addAttribute("despesas", despesas);
-        model.addAttribute("tarefas", tarefas);
+        CasaDto casaDto = new CasaDto(casa.getId(), casa.getNome(), casa.getEndereco(), casa.getCriadoEm());
+        MoradorDto moradorLogadoDto = toMoradorDto(moradorLogado);
 
-        // Formulários em branco para os modais
-        model.addAttribute("despesaForm", new DespesaForm("", BigDecimal.ZERO, LocalDate.now(), 0L));
-        model.addAttribute("tarefaForm", new TarefaForm("", 0L));
+        List<MoradorDto> moradoresDto = moradores.stream()
+                .map(this::toMoradorDto)
+                .toList();
 
-        return "casa_detalhes";
+        List<DespesaDto> despesasDto = despesas.stream()
+                .map(d -> new DespesaDto(
+                        d.getId(),
+                        d.getDescricao(),
+                        d.getValorTotal(),
+                        d.getVencimento(),
+                        d.getStatus(),
+                        toMoradorDto(d.getResponsavel()),
+                        d.getRateios().stream()
+                                .map(r -> new DespesaRateioDto(
+                                        r.getId(),
+                                        toMoradorDto(r.getMorador()),
+                                        r.getValorDevido(),
+                                        r.getUltimoPagamento() != null ? r.getUltimoPagamento().getStatus() : null,
+                                        r.getUltimoPagamento() != null ? r.getUltimoPagamento().getId() : null,
+                                        r.getUltimoPagamento() != null ? r.getUltimoPagamento().getComprovante() : null,
+                                        r.getUltimoPagamento() != null ? r.getUltimoPagamento().getDataPagamento() : null
+                                ))
+                                .toList()
+                ))
+                .toList();
+
+        List<TarefaDto> tarefasDto = tarefas.stream()
+                .map(t -> new TarefaDto(
+                        t.getId(),
+                        t.getDescricao(),
+                        t.getStatus(),
+                        toMoradorDto(t.getResponsavel())
+                ))
+                .toList();
+
+        return ResponseEntity.ok(new DetalhesCasaResponse(
+                casaDto,
+                moradorLogadoDto,
+                moradoresDto,
+                despesasDto,
+                tarefasDto
+        ));
     }
 
-    // Endpoint HTMX para convidar morador
+    /**
+     * Adiciona/convida um novo morador à casa pelo e-mail.
+     */
     @PostMapping("/{id}/moradores")
-    public String convidarMorador(@PathVariable("id") Long id,
-                                  @RequestParam("email") String email,
-                                  Model model) {
-        try {
-            casaService.adicionarMorador(id, email);
-            
-            // Retorna a lista atualizada de moradores via fragmento
-            List<Morador> moradores = casaService.buscarMoradores(id);
-            model.addAttribute("moradores", moradores);
-            model.addAttribute("conviteSucesso", "Morador adicionado com sucesso!");
-        } catch (Exception e) {
-            List<Morador> moradores = casaService.buscarMoradores(id);
-            model.addAttribute("moradores", moradores);
-            model.addAttribute("conviteErro", e.getMessage());
+    public ResponseEntity<MoradorDto> convidarMorador(@PathVariable("id") Long id,
+                                                      @RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("O e-mail do morador é obrigatório.");
         }
+        Morador morador = casaService.adicionarMorador(id, email);
+        return ResponseEntity.ok(toMoradorDto(morador));
+    }
 
-        return "fragments/republica_fragments :: lista-moradores";
+    private MoradorDto toMoradorDto(Morador m) {
+        if (m == null) {
+            return null;
+        }
+        return new MoradorDto(
+                m.getId(),
+                m.getUsuario().getNome(),
+                m.getUsuario().getEmail(),
+                m.getPapel()
+        );
     }
 }
+
 
