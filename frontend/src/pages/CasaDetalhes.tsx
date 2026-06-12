@@ -31,6 +31,8 @@ interface Despesa {
   status: 'PENDENTE' | 'PARCIALMENTE_PAGA' | 'PAGA';
   responsavel: Morador;
   rateios: DespesaRateio[];
+  tipo: 'FIXA' | 'OCASIONAL';
+  chavePix: string | null;
 }
 
 interface Tarefa {
@@ -72,6 +74,8 @@ export default function CasaDetalhes() {
   const [despesaValor, setDespesaValor] = useState('');
   const [despesaVenc, setDespesaVenc] = useState('');
   const [despesaRespId, setDespesaRespId] = useState('');
+  const [despesaTipo, setDespesaTipo] = useState<'FIXA' | 'OCASIONAL'>('OCASIONAL');
+  const [despesaChavePix, setDespesaChavePix] = useState('');
   const [despesaError, setDespesaError] = useState<string | null>(null);
   const [creatingDespesa, setCreatingDespesa] = useState(false);
 
@@ -151,6 +155,8 @@ export default function CasaDetalhes() {
         valorTotal: parseFloat(despesaValor),
         vencimento: despesaVenc,
         responsavelId: parseInt(despesaRespId),
+        tipo: despesaTipo,
+        chavePix: despesaChavePix || null
       });
 
       setData(prev => {
@@ -165,6 +171,8 @@ export default function CasaDetalhes() {
       setDespesaValor('');
       setDespesaVenc('');
       setDespesaRespId('');
+      setDespesaTipo('OCASIONAL');
+      setDespesaChavePix('');
       setShowDespesaModal(false);
     } catch (err: any) {
       setDespesaError(err.message || 'Erro ao criar despesa.');
@@ -286,6 +294,24 @@ export default function CasaDetalhes() {
     }
   }
 
+  async function handleFastPayment(rateioId: number) {
+    try {
+      const updatedDespesa = await api.post<Despesa>(`/api/despesas/rateio/${rateioId}/pagar`, { comprovante: "Pago via PIX (Confirmação rápida)" });
+      setData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          despesas: prev.despesas.map(d => d.id === updatedDespesa.id ? updatedDespesa : d)
+        };
+      });
+      if (selectedDespesa && selectedDespesa.id === updatedDespesa.id) {
+        setSelectedDespesa(updatedDespesa);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Erro ao registrar pagamento rápido.');
+    }
+  }
+
   async function handleConfirmPagamento(pagamentoId: number) {
     try {
       const updatedDespesa = await api.post<Despesa>(`/api/despesas/pagamento/${pagamentoId}/confirmar`);
@@ -301,6 +327,52 @@ export default function CasaDetalhes() {
       alert(err.message || 'Erro ao confirmar pagamento.');
     }
   }
+
+  const renderMinhaParte = (d: Despesa) => {
+    const meuRateio = d.rateios?.find(r => r.morador.email === moradorLogado.email);
+    if (!meuRateio) return null;
+
+    const valorIndividual = meuRateio.valorDevido;
+
+    if (meuRateio.statusPagamento === 'CONFIRMADO') {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-success)' }}>
+          <Check size={16} />
+          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Pago (R$ {valorIndividual.toFixed(2)})</span>
+        </div>
+      );
+    }
+
+    if (meuRateio.statusPagamento === 'INFORMADO') {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-accent-orange)' }}>
+          <div className="cyber-spinner" style={{ width: '12px', height: '12px', border: '2px solid var(--color-accent-orange)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', marginRight: '4px' }} />
+          <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Aguardando Confirmação (R$ {valorIndividual.toFixed(2)})</span>
+        </div>
+      );
+    }
+
+    // PENDENTE ou REJEITADO
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <input
+          type="checkbox"
+          checked={false}
+          onChange={() => handleFastPayment(meuRateio.id)}
+          style={{
+            width: '16px',
+            height: '16px',
+            cursor: 'pointer',
+            accentColor: 'var(--color-accent-blue)'
+          }}
+          title="Marcar como enviado"
+        />
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+          Marcar Pago (R$ {valorIndividual.toFixed(2)})
+        </span>
+      </div>
+    );
+  };
 
   async function handleRejeitarPagamento(pagamentoId: number) {
     try {
@@ -350,6 +422,8 @@ export default function CasaDetalhes() {
 
   const { casa, moradorLogado, moradores, despesas, tarefas } = data;
   const isAdm = moradorLogado.papel === 'ADMINISTRADOR';
+  const despesasFixas = despesas.filter(d => d.tipo === 'FIXA');
+  const despesasOcasionais = despesas.filter(d => d.tipo === 'OCASIONAL');
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: '120px' }}>
@@ -548,8 +622,8 @@ export default function CasaDetalhes() {
           </div>
 
           {/* Row 2: Despesas */}
-          <div className="cyber-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid var(--border-muted)', paddingBottom: '12px' }}>
+          <div className="cyber-card" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-muted)', paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <DollarSign size={18} style={{ color: 'var(--color-accent-blue)' }} />
                 <h3>Despesas Coletivas ({despesas.length})</h3>
@@ -563,76 +637,220 @@ export default function CasaDetalhes() {
               </button>
             </div>
 
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '600px' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-muted)', color: 'var(--text-secondary)', fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}>
-                    <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Descrição</th>
-                    <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Valor Total</th>
-                    <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Vencimento</th>
-                    <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Responsável</th>
-                    <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Status</th>
-                    <th style={{ padding: '12px 16px', textTransform: 'uppercase', textAlign: 'center' }}>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {despesas.map((d) => (
-                    <tr 
-                      key={d.id} 
-                      style={{ 
-                        borderBottom: '1px solid var(--border-muted)',
-                        fontSize: '0.9rem',
-                        transition: 'background 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.01)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <td style={{ padding: '16px', fontWeight: 600 }}>{d.descricao}</td>
-                      <td style={{ padding: '16px', fontFamily: 'var(--font-mono)' }}>R$ {d.valorTotal.toFixed(2)}</td>
-                      <td style={{ padding: '16px' }}>{new Date(d.vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
-                      <td style={{ padding: '16px' }}>{d.responsavel.nome}</td>
-                      <td style={{ padding: '16px' }}>
-                        <span className={`cyber-badge ${
-                          d.status === 'PAGA' ? 'cyber-badge-success' : 
-                          d.status === 'PARCIALMENTE_PAGA' ? 'cyber-badge-orange' : 'cyber-badge-danger'
-                        }`} style={{ fontSize: '0.65rem' }}>
-                          {d.status.replace('_', ' ')}
-                        </span>
-                      </td>
-                      <td style={{ padding: '16px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                        <button
-                          onClick={() => {
-                            setSelectedDespesa(d);
-                            setShowRateioModal(true);
-                          }}
-                          className="cyber-btn cyber-btn-secondary"
-                          style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                        >
-                          <Eye size={12} /> Rateio
-                        </button>
-                        
-                        {isAdm && (
+            {/* Sub-seção: Despesas Fixas */}
+            <div>
+              <h4 style={{ marginBottom: '16px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-accent-blue)' }}></span>
+                Despesas Fixas (Mensais)
+              </h4>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border-muted)', color: 'var(--text-secondary)', fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}>
+                      <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Descrição</th>
+                      <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Valor</th>
+                      <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Vencimento</th>
+                      <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Responsável</th>
+                      <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Status</th>
+                      <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Minha Parte</th>
+                      <th style={{ padding: '12px 16px', textTransform: 'uppercase', textAlign: 'center' }}>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {despesasFixas.map((d) => (
+                      <tr 
+                        key={d.id} 
+                        style={{ 
+                          borderBottom: '1px solid var(--border-muted)',
+                          fontSize: '0.9rem',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.01)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <td style={{ padding: '16px' }}>
+                          <div style={{ fontWeight: 600 }}>{d.descricao}</div>
+                          {d.chavePix && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                              <span 
+                                onClick={() => {
+                                  navigator.clipboard.writeText(d.chavePix!);
+                                  alert('Chave PIX copiada: ' + d.chavePix);
+                                }}
+                                className="cyber-badge cyber-badge-blue"
+                                style={{ 
+                                  fontSize: '0.7rem', 
+                                  cursor: 'pointer', 
+                                  padding: '2px 6px',
+                                  fontFamily: 'var(--font-mono)'
+                                }}
+                                title="Clique para copiar a chave PIX"
+                              >
+                                PIX: {d.chavePix} (Copiar)
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                        <td style={{ padding: '16px' }}>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>R$ {d.valorTotal.toFixed(2)}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            R$ {(d.valorTotal / moradores.length).toFixed(2)} p/ pessoa ({moradores.length} mor.)
+                          </div>
+                        </td>
+                        <td style={{ padding: '16px' }}>{new Date(d.vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                        <td style={{ padding: '16px' }}>{d.responsavel.nome}</td>
+                        <td style={{ padding: '16px' }}>
+                          <span className={`cyber-badge ${
+                            d.status === 'PAGA' ? 'cyber-badge-success' : 
+                            d.status === 'PARCIALMENTE_PAGA' ? 'cyber-badge-orange' : 'cyber-badge-danger'
+                          }`} style={{ fontSize: '0.65rem' }}>
+                            {d.status.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td style={{ padding: '16px' }}>{renderMinhaParte(d)}</td>
+                        <td style={{ padding: '16px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
                           <button
-                            onClick={() => handleDeleteDespesa(d.id)}
-                            className="cyber-btn cyber-btn-danger"
-                            style={{ padding: '6px 10px', fontSize: '0.75rem' }}
+                            onClick={() => {
+                              setSelectedDespesa(d);
+                              setShowRateioModal(true);
+                            }}
+                            className="cyber-btn cyber-btn-secondary"
+                            style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
                           >
-                            <Trash2 size={12} />
+                            <Eye size={12} /> Rateio
                           </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                          
+                          {isAdm && (
+                            <button
+                              onClick={() => handleDeleteDespesa(d.id)}
+                              className="cyber-btn cyber-btn-danger"
+                              style={{ padding: '6px 10px', fontSize: '0.75rem' }}
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
 
-                  {despesas.length === 0 && (
-                    <tr>
-                      <td colSpan={6} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                        Nenhuma despesa lançada nesta república.
-                      </td>
+                    {despesasFixas.length === 0 && (
+                      <tr>
+                        <td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                          Nenhuma despesa fixa lançada.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Sub-seção: Despesas Ocasionais */}
+            <div>
+              <h4 style={{ marginBottom: '16px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-accent-orange)' }}></span>
+                Despesas Ocasionais (Extras)
+              </h4>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border-muted)', color: 'var(--text-secondary)', fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}>
+                      <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Descrição</th>
+                      <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Valor</th>
+                      <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Vencimento</th>
+                      <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Responsável</th>
+                      <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Status</th>
+                      <th style={{ padding: '12px 16px', textTransform: 'uppercase' }}>Minha Parte</th>
+                      <th style={{ padding: '12px 16px', textTransform: 'uppercase', textAlign: 'center' }}>Ações</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {despesasOcasionais.map((d) => (
+                      <tr 
+                        key={d.id} 
+                        style={{ 
+                          borderBottom: '1px solid var(--border-muted)',
+                          fontSize: '0.9rem',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.01)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <td style={{ padding: '16px' }}>
+                          <div style={{ fontWeight: 600 }}>{d.descricao}</div>
+                          {d.chavePix && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                              <span 
+                                onClick={() => {
+                                  navigator.clipboard.writeText(d.chavePix!);
+                                  alert('Chave PIX copiada: ' + d.chavePix);
+                                }}
+                                className="cyber-badge cyber-badge-blue"
+                                style={{ 
+                                  fontSize: '0.7rem', 
+                                  cursor: 'pointer', 
+                                  padding: '2px 6px',
+                                  fontFamily: 'var(--font-mono)'
+                                }}
+                                title="Clique para copiar a chave PIX"
+                              >
+                                PIX: {d.chavePix} (Copiar)
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                        <td style={{ padding: '16px' }}>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>R$ {d.valorTotal.toFixed(2)}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            R$ {(d.valorTotal / moradores.length).toFixed(2)} p/ pessoa ({moradores.length} mor.)
+                          </div>
+                        </td>
+                        <td style={{ padding: '16px' }}>{new Date(d.vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                        <td style={{ padding: '16px' }}>{d.responsavel.nome}</td>
+                        <td style={{ padding: '16px' }}>
+                          <span className={`cyber-badge ${
+                            d.status === 'PAGA' ? 'cyber-badge-success' : 
+                            d.status === 'PARCIALMENTE_PAGA' ? 'cyber-badge-orange' : 'cyber-badge-danger'
+                          }`} style={{ fontSize: '0.65rem' }}>
+                            {d.status.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td style={{ padding: '16px' }}>{renderMinhaParte(d)}</td>
+                        <td style={{ padding: '16px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => {
+                              setSelectedDespesa(d);
+                              setShowRateioModal(true);
+                            }}
+                            className="cyber-btn cyber-btn-secondary"
+                            style={{ padding: '6px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <Eye size={12} /> Rateio
+                          </button>
+                          
+                          {isAdm && (
+                            <button
+                              onClick={() => handleDeleteDespesa(d.id)}
+                              className="cyber-btn cyber-btn-danger"
+                              style={{ padding: '6px 10px', fontSize: '0.75rem' }}
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+
+                    {despesasOcasionais.length === 0 && (
+                      <tr>
+                        <td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                          Nenhuma despesa ocasional lançada.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -788,7 +1006,7 @@ export default function CasaDetalhes() {
                 </div>
               </div>
 
-              <div className="cyber-input-group" style={{ marginBottom: '28px' }}>
+              <div className="cyber-input-group" style={{ marginBottom: '20px' }}>
                 <label className="cyber-input-label">Responsável pelo pagamento</label>
                 <select
                   className="cyber-input"
@@ -802,6 +1020,34 @@ export default function CasaDetalhes() {
                     <option key={m.id} value={m.id}>{m.nome}</option>
                   ))}
                 </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '28px' }}>
+                <div className="cyber-input-group" style={{ marginBottom: 0 }}>
+                  <label className="cyber-input-label">Tipo de Despesa</label>
+                  <select
+                    className="cyber-input"
+                    value={despesaTipo}
+                    onChange={(e) => setDespesaTipo(e.target.value as 'FIXA' | 'OCASIONAL')}
+                    disabled={creatingDespesa}
+                    style={{ background: 'var(--bg-input)' }}
+                  >
+                    <option value="OCASIONAL">Ocasional</option>
+                    <option value="FIXA">Fixa (Mensal)</option>
+                  </select>
+                </div>
+
+                <div className="cyber-input-group" style={{ marginBottom: 0 }}>
+                  <label className="cyber-input-label">Chave PIX (Opcional)</label>
+                  <input
+                    type="text"
+                    className="cyber-input"
+                    placeholder="Chave PIX para pagamento"
+                    value={despesaChavePix}
+                    onChange={(e) => setDespesaChavePix(e.target.value)}
+                    disabled={creatingDespesa}
+                  />
+                </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>

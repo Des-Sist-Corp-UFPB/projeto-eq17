@@ -48,6 +48,15 @@ public class Despesa {
     @Column(name = "status", nullable = false, length = 50)
     private StatusDespesa status;
 
+    @NotNull(message = "O tipo de despesa é obrigatório")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo", nullable = false, length = 50)
+    private TipoDespesa tipo = TipoDespesa.OCASIONAL;
+
+    @Size(max = 150, message = "A chave PIX pode ter no máximo 150 caracteres")
+    @Column(name = "chave_pix", length = 150)
+    private String chavePix;
+
     @Column(name = "criado_em", nullable = false, updatable = false)
     private Instant criadoEm;
 
@@ -68,6 +77,9 @@ public class Despesa {
         if (this.excluido == null) {
             this.excluido = false;
         }
+        if (this.tipo == null) {
+            this.tipo = TipoDespesa.OCASIONAL;
+        }
     }
 
     @PreUpdate
@@ -78,13 +90,15 @@ public class Despesa {
     public Despesa() {
     }
 
-    public Despesa(Casa casa, String descricao, BigDecimal valorTotal, LocalDate vencimento, Morador responsavel, StatusDespesa status) {
+    public Despesa(Casa casa, String descricao, BigDecimal valorTotal, LocalDate vencimento, Morador responsavel, StatusDespesa status, TipoDespesa tipo, String chavePix) {
         this.casa = casa;
         this.descricao = descricao;
         this.valorTotal = valorTotal;
         this.vencimento = vencimento;
         this.responsavel = responsavel;
         this.status = status;
+        this.tipo = tipo;
+        this.chavePix = chavePix;
     }
 
     public Long getId() {
@@ -143,6 +157,22 @@ public class Despesa {
         this.status = status;
     }
 
+    public TipoDespesa getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(TipoDespesa tipo) {
+        this.tipo = tipo;
+    }
+
+    public String getChavePix() {
+        return chavePix;
+    }
+
+    public void setChavePix(String chavePix) {
+        this.chavePix = chavePix;
+    }
+
     public Instant getCriadoEm() {
         return criadoEm;
     }
@@ -182,7 +212,7 @@ public class Despesa {
                 ", descricao='" + descricao + '\'' +
                 ", valorTotal=" + valorTotal +
                 ", status=" + status +
+                ", tipo=" + tipo +
                 '}';
     }
 }
-

@@ -94,7 +94,9 @@ public class CasaController {
                                         r.getUltimoPagamento() != null ? r.getUltimoPagamento().getComprovante() : null,
                                         r.getUltimoPagamento() != null ? r.getUltimoPagamento().getDataPagamento() : null
                                 ))
-                                .toList()
+                                .toList(),
+                        d.getTipo(),
+                        d.getChavePix()
                 ))
                 .toList();
 

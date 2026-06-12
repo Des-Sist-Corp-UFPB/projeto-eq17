@@ -114,7 +114,9 @@ public class DespesaController {
                 toMoradorDto(d.getResponsavel()),
                 d.getRateios().stream()
                         .map(this::toDespesaRateioDto)
-                        .toList()
+                        .toList(),
+                d.getTipo(),
+                d.getChavePix()
         );
     }
 

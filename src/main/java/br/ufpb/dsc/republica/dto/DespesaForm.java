@@ -1,5 +1,6 @@
 package br.ufpb.dsc.republica.dto;
 
+import br.ufpb.dsc.republica.domain.TipoDespesa;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,6 +21,12 @@ public record DespesaForm(
     LocalDate vencimento,
 
     @NotNull(message = "O responsável pelo pagamento é obrigatório")
-    Long responsavelId
+    Long responsavelId,
+
+    @NotNull(message = "O tipo de despesa é obrigatório")
+    TipoDespesa tipo,
+
+    @Size(max = 150, message = "A chave PIX pode ter no máximo 150 caracteres")
+    String chavePix
 ) {}
 

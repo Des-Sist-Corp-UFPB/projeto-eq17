@@ -65,7 +65,7 @@ public class DespesaService {
             throw new IllegalArgumentException("A casa deve ter pelo menos um morador para registrar despesas.");
         }
 
-        Despesa despesa = new Despesa(casa, form.descricao(), form.valorTotal(), form.vencimento(), responsavel, StatusDespesa.PENDENTE);
+        Despesa despesa = new Despesa(casa, form.descricao(), form.valorTotal(), form.vencimento(), responsavel, StatusDespesa.PENDENTE, form.tipo(), form.chavePix());
         despesa = despesaRepository.save(despesa);
 
         // Divisão automática e matemática exata do rateio
