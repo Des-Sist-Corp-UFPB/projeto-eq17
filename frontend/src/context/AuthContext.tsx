@@ -73,9 +73,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       await api.post('/api/auth/register', { nome: name, email, senha: targetPassword });
-      
-      // Auto login após cadastro efetuado com sucesso
-      await login(email, targetPassword);
+      // Como a conta inicia inativa (ativo = false) aguardando confirmação de e-mail,
+      // não realizamos o login automático aqui. A ativação ocorre via link de e-mail.
     } catch (err: any) {
       setError(err.message || 'Erro ao realizar cadastro');
       throw err;

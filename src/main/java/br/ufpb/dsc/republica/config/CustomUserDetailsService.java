@@ -27,7 +27,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new User(
                 usuario.getEmail(),
                 usuario.getSenha(),
-                Collections.emptyList() // No nosso sistema simplificado, não precisamos de roles específicas além de estar autenticado
+                usuario.getAtivo(), // enabled
+                true, // accountNonExpired
+                true, // credentialsNonExpired
+                true, // accountNonLocked
+                Collections.emptyList()
         );
     }
 }

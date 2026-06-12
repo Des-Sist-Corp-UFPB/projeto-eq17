@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { UserPlus, ShieldAlert } from 'lucide-react';
+import { UserPlus, ShieldAlert, Mail, ArrowRight } from 'lucide-react';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -9,8 +9,8 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false);
   const { register } = useAuth();
-  const navigate = useNavigate();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,8 +19,8 @@ export default function Register() {
       return;
     }
 
-    if (password.length < 6) {
-      setLocalError('A senha deve ter pelo menos 6 caracteres.');
+    if (password.length < 8) {
+      setLocalError('A senha deve ter pelo menos 8 caracteres.');
       return;
     }
 
@@ -29,12 +29,93 @@ export default function Register() {
 
     try {
       await register(name, email, password);
-      navigate('/');
+      setIsRegistered(true);
     } catch (err: any) {
       setLocalError(err.message || 'Erro ao efetuar cadastro. Verifique os dados.');
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (isRegistered) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px',
+        position: 'relative',
+      }}>
+        <div className="cyber-card" style={{ 
+          width: '100%', 
+          maxWidth: '420px', 
+          padding: '40px 32px',
+          textAlign: 'center'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+            <span className="cyber-badge" style={{
+              background: 'rgba(16, 185, 129, 0.1)',
+              color: '#10b981',
+              border: '1px solid rgba(16, 185, 129, 0.2)'
+            }}>
+              Quase Lá!
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px', color: '#10b981' }}>
+            <div style={{
+              background: 'rgba(16, 185, 129, 0.1)',
+              borderRadius: '50%',
+              padding: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Mail size={40} />
+            </div>
+          </div>
+
+          <h1 style={{
+            fontSize: '2rem',
+            fontWeight: 800,
+            color: 'var(--text-primary)',
+            letterSpacing: '-0.03em',
+            lineHeight: 1.2,
+            marginBottom: '16px'
+          }}>
+            Confirme seu E-mail
+          </h1>
+
+          <p style={{
+            fontSize: '0.95rem',
+            color: 'var(--text-secondary)',
+            lineHeight: 1.6,
+            marginBottom: '32px'
+          }}>
+            Enviamos um link de confirmação para o endereço <strong style={{ color: 'var(--text-primary)' }}>{email}</strong>. 
+            Acesse sua caixa de entrada e clique no link para ativar sua conta antes de fazer o login.
+          </p>
+
+          <Link
+            to="/login"
+            className="cyber-btn cyber-btn-orange"
+            style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%', 
+              padding: '14px', 
+              textDecoration: 'none',
+              fontWeight: 600,
+              gap: '8px'
+            }}
+          >
+            Ir para o Login <ArrowRight size={16} />
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -126,7 +207,7 @@ export default function Register() {
             <input
               type="password"
               className="cyber-input"
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Mínimo 8 caracteres"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={submitting}

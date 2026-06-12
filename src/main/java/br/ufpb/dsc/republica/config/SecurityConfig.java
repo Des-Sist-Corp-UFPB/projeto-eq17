@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.web.cors.CorsConfiguration;
@@ -55,7 +56,7 @@ public class SecurityConfig {
                         // Outros endpoints do Actuator exigem autenticação
                         .requestMatchers("/actuator/**").authenticated()
                         // Endpoints públicos da API de Autenticação
-                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/verificar-email").permitAll()
                         // Outros endpoints da API exigem autenticação
                         .requestMatchers("/api/**").authenticated()
                         // Qualquer outra requisição (páginas da SPA, CSS, JS, etc.) é pública
@@ -75,7 +76,11 @@ public class SecurityConfig {
                         .failureHandler((request, response, exception) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json;charset=UTF-8");
-                            response.getWriter().write("{\"erro\": \"Credenciais inválidas. Verifique seu e-mail e senha.\"}");
+                            String msg = "Credenciais inválidas. Verifique seu e-mail e senha.";
+                            if (exception instanceof DisabledException) {
+                                msg = "Por favor, confirme seu e-mail antes de fazer login.";
+                            }
+                            response.getWriter().write("{\"erro\": \"" + msg + "\"}");
                         })
                         .permitAll()
                 )
