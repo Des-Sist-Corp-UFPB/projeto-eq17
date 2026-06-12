@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class SpaController {
 
-    @GetMapping(value = "/{path:^(?!api|webjars|css|js|assets|favicon\\.ico|actuator|ping).*$}/**")
+    @GetMapping(value = "/{path:^(?!api|webjars|css|js|assets|favicon\\.ico|actuator|ping|index\\.html).*$}/**")
     public String forward() {
         return "forward:/index.html";
     }
