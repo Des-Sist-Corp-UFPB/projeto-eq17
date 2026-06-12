@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { LogOut, Plus, MapPin, Calendar, LayoutDashboard, User, ShieldAlert } from 'lucide-react';
+import NotificacoesMenu from '../components/NotificacoesMenu';
 
 interface Casa {
   id: number;
@@ -129,6 +130,8 @@ export default function Dashboard() {
               <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{user?.nome}</span>
               <span style={{ color: 'var(--text-muted)' }}>({user?.email})</span>
             </div>
+
+            <NotificacoesMenu />
 
             <button
               onClick={() => logout().then(() => navigate('/login'))}

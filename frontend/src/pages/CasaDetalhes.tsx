@@ -5,6 +5,7 @@ import {
   ArrowLeft, Users, DollarSign, CheckSquare, Trash2, 
   Check, X, Eye, FileText, Send, ShieldAlert, Award, Calendar, MapPin
 } from 'lucide-react';
+import NotificacoesMenu from '../components/NotificacoesMenu';
 
 interface Morador {
   id: number;
@@ -443,9 +444,12 @@ export default function CasaDetalhes() {
             <ArrowLeft size={14} /> Painel Principal
           </button>
           
-          <span className="cyber-badge cyber-badge-blue">
-            República #{casa.id} | {moradorLogado.papel === 'ADMINISTRADOR' ? 'Administrador' : 'Morador'}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <NotificacoesMenu />
+            <span className="cyber-badge cyber-badge-blue">
+              República #{casa.id} | {moradorLogado.papel === 'ADMINISTRADOR' ? 'Administrador' : 'Morador'}
+            </span>
+          </div>
         </div>
       </div>
 

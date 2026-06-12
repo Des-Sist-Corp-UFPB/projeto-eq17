@@ -8,6 +8,7 @@ import br.ufpb.dsc.republica.dto.TarefaForm;
 import br.ufpb.dsc.republica.repository.CasaRepository;
 import br.ufpb.dsc.republica.repository.MoradorRepository;
 import br.ufpb.dsc.republica.repository.TarefaRepository;
+import br.ufpb.dsc.republica.domain.TipoNotificacao;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,11 +21,14 @@ public class TarefaService {
     private final TarefaRepository tarefaRepository;
     private final CasaRepository casaRepository;
     private final MoradorRepository moradorRepository;
+    private final NotificacaoService notificacaoService;
 
-    public TarefaService(TarefaRepository tarefaRepository, CasaRepository casaRepository, MoradorRepository moradorRepository) {
+    public TarefaService(TarefaRepository tarefaRepository, CasaRepository casaRepository, 
+                         MoradorRepository moradorRepository, NotificacaoService notificacaoService) {
         this.tarefaRepository = tarefaRepository;
         this.casaRepository = casaRepository;
         this.moradorRepository = moradorRepository;
+        this.notificacaoService = notificacaoService;
     }
 
     @Transactional(readOnly = true)
@@ -51,6 +55,14 @@ public class TarefaService {
                 throw new IllegalArgumentException("O responsável deve morar na mesma casa da tarefa.");
             }
             tarefa.setResponsavel(responsavel);
+            
+            // Notificar o morador responsável
+            notificacaoService.criarNotificacao(
+                responsavel.getUsuario(),
+                "Nova tarefa atribuída a você",
+                "Você foi designado como responsável pela tarefa: '" + tarefa.getDescricao() + "'.",
+                TipoNotificacao.TAREFA_ATRIBUIDA
+            );
         }
 
         return tarefaRepository.save(tarefa);
@@ -73,6 +85,14 @@ public class TarefaService {
                 throw new IllegalArgumentException("O responsável deve morar na mesma casa da tarefa.");
             }
             tarefa.setResponsavel(morador);
+            
+            // Notificar o morador responsável
+            notificacaoService.criarNotificacao(
+                morador.getUsuario(),
+                "Tarefa atribuída a você",
+                "Você foi designado como responsável pela tarefa: '" + tarefa.getDescricao() + "'.",
+                TipoNotificacao.TAREFA_ATRIBUIDA
+            );
         }
         return tarefaRepository.save(tarefa);
     }

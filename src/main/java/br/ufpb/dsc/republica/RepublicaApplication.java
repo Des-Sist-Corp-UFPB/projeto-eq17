@@ -2,6 +2,7 @@ package br.ufpb.dsc.republica;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Classe principal da aplicação HomeHub — Gestão de Repúblicas Universitárias.
@@ -24,6 +25,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @version 0.0.1-SNAPSHOT
  */
 @SpringBootApplication
+@EnableScheduling
 public class RepublicaApplication {
 
     /**

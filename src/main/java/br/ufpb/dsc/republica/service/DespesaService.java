@@ -21,17 +21,20 @@ public class DespesaService {
     private final PagamentoRepository pagamentoRepository;
     private final CasaRepository casaRepository;
     private final MoradorRepository moradorRepository;
+    private final NotificacaoService notificacaoService;
 
     public DespesaService(DespesaRepository despesaRepository,
                           DespesaRateioRepository despesaRateioRepository,
                           PagamentoRepository pagamentoRepository,
                           CasaRepository casaRepository,
-                          MoradorRepository moradorRepository) {
+                          MoradorRepository moradorRepository,
+                          NotificacaoService notificacaoService) {
         this.despesaRepository = despesaRepository;
         this.despesaRateioRepository = despesaRateioRepository;
         this.pagamentoRepository = pagamentoRepository;
         this.casaRepository = casaRepository;
         this.moradorRepository = moradorRepository;
+        this.notificacaoService = notificacaoService;
     }
 
     @Transactional(readOnly = true)
@@ -97,6 +100,20 @@ public class DespesaService {
         }
 
         despesa.setRateios(rateios);
+
+        // Disparar notificações de criação de despesa para cada morador
+        for (DespesaRateio rateio : rateios) {
+            Usuario usuario = rateio.getMorador().getUsuario();
+            String titulo = "Nova despesa lançada!";
+            String mensagem = String.format("A despesa '%s' no valor total de R$ %.2f foi lançada. Sua parte individual a pagar é R$ %.2f com vencimento em %s.",
+                    despesa.getDescricao(),
+                    despesa.getValorTotal(),
+                    rateio.getValorDevido(),
+                    despesa.getVencimento()
+            );
+            notificacaoService.criarNotificacao(usuario, titulo, mensagem, TipoNotificacao.DESPESA_CRIADA);
+        }
+
         return despesa;
     }
 
