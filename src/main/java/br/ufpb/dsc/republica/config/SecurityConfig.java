@@ -31,10 +31,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // === CORS (Cross-Origin Resource Sharing) ===
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
-                    config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"));
+                    config.setAllowedOriginPatterns(List.of(
+                            "http://localhost:*",
+                            "http://127.0.0.1:*",
+                            "http://*.dsc.rodrigor.com",
+                            "https://*.dsc.rodrigor.com"
+                    ));
                     config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
                     config.setAllowedHeaders(List.of("*"));
                     config.setAllowCredentials(true);
