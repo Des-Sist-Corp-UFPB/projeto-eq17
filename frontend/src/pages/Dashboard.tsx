@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { LogOut, Plus, MapPin, Calendar, LayoutDashboard, User, ShieldAlert, Download, Trash2, Shield } from 'lucide-react';
+import { LogOut, Plus, MapPin, Calendar, LayoutDashboard, ShieldAlert, Download, Trash2 } from 'lucide-react';
 import NotificacoesMenu from '../components/NotificacoesMenu';
 
 interface Casa {
@@ -32,6 +32,7 @@ export default function Dashboard() {
   const [endereco, setEndereco] = useState('');
   const [modalError, setModalError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const { logout, user } = useAuth();
   const navigate = useNavigate();
@@ -156,21 +157,197 @@ export default function Dashboard() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-              <User size={14} style={{ color: 'var(--text-secondary)' }} />
-              <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{user?.nome}</span>
-              <span style={{ color: 'var(--text-muted)' }}>({user?.email})</span>
-            </div>
-
             <NotificacoesMenu />
 
-            <button
-              onClick={() => logout().then(() => navigate('/login'))}
-              className="cyber-btn cyber-btn-secondary"
-              style={{ padding: '8px 16px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              Sair <LogOut size={12} />
-            </button>
+            {/* Menu do Perfil com Dropdown */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  padding: '8px 14px',
+                  borderRadius: '10px',
+                  transition: 'all 0.2s',
+                  color: 'var(--text-primary)',
+                  backgroundColor: showProfileMenu ? 'var(--border-muted)' : 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  if (!showProfileMenu) e.currentTarget.style.backgroundColor = 'var(--border-muted)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!showProfileMenu) e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <div style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--color-accent-blue)',
+                  fontWeight: 700,
+                  fontSize: '0.75rem',
+                  fontFamily: 'var(--font-mono)'
+                }}>
+                  {user?.nome ? user.nome.substring(0, 2).toUpperCase() : 'U'}
+                </div>
+                <span style={{ fontWeight: 600 }}>{user?.nome}</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>▼</span>
+              </button>
+
+              {showProfileMenu && (
+                <>
+                  {/* Overlay invisível para fechar ao clicar fora */}
+                  <div 
+                    onClick={() => setShowProfileMenu(false)}
+                    style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      width: '100vw',
+                      height: '100vh',
+                      zIndex: 90,
+                      background: 'transparent'
+                    }}
+                  />
+                  
+                  {/* Menu Dropdown */}
+                  <div style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: '100%',
+                    marginTop: '8px',
+                    width: '260px',
+                    backgroundColor: 'var(--bg-card)',
+                    border: '1px solid var(--border-muted)',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1)',
+                    zIndex: 100,
+                    padding: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }}>
+                    {/* Cabeçalho do perfil */}
+                    <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border-muted)', marginBottom: '4px' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.nome}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</div>
+                    </div>
+
+                    {/* Opção Exportar */}
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        handleExportarDados();
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '10px 12px',
+                        fontSize: '0.85rem',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s',
+                        fontFamily: 'var(--font-body)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(79, 70, 229, 0.05)';
+                        e.currentTarget.style.color = 'var(--color-accent-blue)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = 'var(--text-secondary)';
+                      }}
+                    >
+                      <Download size={14} />
+                      Exportar meus Dados (JSON)
+                    </button>
+
+                    {/* Opção Excluir */}
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        handleExcluirConta();
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '10px 12px',
+                        fontSize: '0.85rem',
+                        color: 'var(--color-danger)',
+                        cursor: 'pointer',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s',
+                        fontFamily: 'var(--font-body)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.05)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      <Trash2 size={14} />
+                      Excluir Minha Conta
+                    </button>
+
+                    <div style={{ borderTop: '1px solid var(--border-muted)', margin: '4px 0' }} />
+
+                    {/* Botão Sair */}
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        logout().then(() => navigate('/login'));
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '10px 12px',
+                        fontSize: '0.85rem',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s',
+                        fontFamily: 'var(--font-body)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--border-muted)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      <LogOut size={14} />
+                      Sair da Conta
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -300,47 +477,6 @@ export default function Dashboard() {
               <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Clique aqui para registrar a primeira república e começar a gerenciar.</p>
             </div>
           )}
-        </div>
-
-        {/* Seção LGPD e Privacidade */}
-        <div style={{ marginTop: '56px', borderTop: '1px solid var(--border-muted)', paddingTop: '40px' }}>
-          <div className="cyber-card" style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            justifyContent: 'space-between', 
-            alignItems: 'flex-start', 
-            gap: '24px',
-            position: 'relative'
-          }}>
-            <div style={{ width: '100%' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <span className="cyber-badge cyber-badge-blue" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Shield size={12} /> Privacidade & LGPD
-                </span>
-              </div>
-              <h3 style={{ fontSize: '1.4rem', marginBottom: '8px', letterSpacing: '-0.01em' }}>Seus Direitos de Privacidade</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5', maxWidth: '680px' }}>
-                Gerencie seus dados pessoais em conformidade com a Lei Geral de Proteção de Dados (LGPD). Você tem o direito de baixar uma cópia completa de suas informações cadastradas (incluindo histórico financeiro e tarefas) ou solicitar a exclusão/anonimização permanente de sua conta no HomeHub.
-              </p>
-            </div>
-            
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px' }}>
-              <button
-                onClick={handleExportarDados}
-                className="cyber-btn cyber-btn-secondary"
-                style={{ fontSize: '0.85rem', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <Download size={16} /> Exportar meus Dados (JSON)
-              </button>
-              <button
-                onClick={handleExcluirConta}
-                className="cyber-btn cyber-btn-danger"
-                style={{ fontSize: '0.85rem', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <Trash2 size={16} /> Excluir Minha Conta
-              </button>
-            </div>
-          </div>
         </div>
       </main>
 
