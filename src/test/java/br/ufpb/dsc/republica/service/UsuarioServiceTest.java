@@ -2,7 +2,6 @@ package br.ufpb.dsc.republica.service;
 
 import br.ufpb.dsc.republica.domain.Usuario;
 import br.ufpb.dsc.republica.dto.UsuarioForm;
-import br.ufpb.dsc.republica.repository.TokenVerificacaoRepository;
 import br.ufpb.dsc.republica.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,13 +24,7 @@ class UsuarioServiceTest {
     private UsuarioRepository usuarioRepository;
 
     @Mock
-    private TokenVerificacaoRepository tokenVerificacaoRepository;
-
-    @Mock
     private PasswordEncoder passwordEncoder;
-
-    @Mock
-    private EmailService emailService;
 
     @InjectMocks
     private UsuarioService usuarioService;

@@ -2,8 +2,6 @@ package br.ufpb.dsc.republica.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -11,8 +9,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class EmailService {
-
-    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
     private final JavaMailSender mailSender;
 
@@ -65,11 +61,9 @@ public class EmailService {
 
             helper.setText(htmlBody, true);
             mailSender.send(message);
-            log.info("E-mail de confirmação enviado com sucesso para: {}", emailUsuario);
 
-        } catch (Exception e) {
-            log.error("FALHA AO ENVIAR E-MAIL de confirmação para: {}. Motivo: {}", emailUsuario, e.getMessage(), e);
-            log.warn("=== LINK DE VERIFICAÇÃO (Para uso caso o envio falhe): {}/api/auth/verificar-email?token={} ===", appUrl, token);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Falha ao enviar e-mail de confirmação para: " + emailUsuario, e);
         }
     }
 }
