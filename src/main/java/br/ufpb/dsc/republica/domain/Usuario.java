@@ -33,6 +33,15 @@ public class Usuario {
     @Column(name = "criado_em", nullable = false, updatable = false)
     private Instant criadoEm;
 
+    @Column(name = "aceitou_termos_lgpd", nullable = false)
+    private Boolean aceitouTermosLgpd = false;
+
+    @Column(name = "data_aceite_lgpd")
+    private Instant dataAceiteLgpd;
+
+    @Column(name = "versao_termo_lgpd", length = 50)
+    private String versaoTermoLgpd;
+
     @PrePersist
     protected void prePersist() {
         this.criadoEm = Instant.now();
@@ -85,6 +94,30 @@ public class Usuario {
 
     public void setCriadoEm(Instant criadoEm) {
         this.criadoEm = criadoEm;
+    }
+
+    public Boolean getAceitouTermosLgpd() {
+        return aceitouTermosLgpd;
+    }
+
+    public void setAceitouTermosLgpd(Boolean aceitouTermosLgpd) {
+        this.aceitouTermosLgpd = aceitouTermosLgpd;
+    }
+
+    public Instant getDataAceiteLgpd() {
+        return dataAceiteLgpd;
+    }
+
+    public void setDataAceiteLgpd(Instant dataAceiteLgpd) {
+        this.dataAceiteLgpd = dataAceiteLgpd;
+    }
+
+    public String getVersaoTermoLgpd() {
+        return versaoTermoLgpd;
+    }
+
+    public void setVersaoTermoLgpd(String versaoTermoLgpd) {
+        this.versaoTermoLgpd = versaoTermoLgpd;
     }
 
     @Override

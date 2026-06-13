@@ -14,7 +14,7 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   login: (email: string, targetPassword: string) => Promise<void>;
-  register: (name: string, email: string, targetPassword: string) => Promise<void>;
+  register: (name: string, email: string, targetPassword: string, aceitouTermosLgpd: boolean, versaoTermoLgpd: string) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -68,11 +68,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function register(name: string, email: string, targetPassword: string) {
+  async function register(name: string, email: string, targetPassword: string, aceitouTermosLgpd: boolean, versaoTermoLgpd: string) {
     setIsLoading(true);
     setError(null);
     try {
-      await api.post('/api/auth/register', { nome: name, email, senha: targetPassword });
+      await api.post('/api/auth/register', {
+        nome: name,
+        email,
+        senha: targetPassword,
+        aceitouTermosLgpd,
+        versaoTermoLgpd
+      });
       
       // Auto login após cadastro efetuado com sucesso
       await login(email, targetPassword);

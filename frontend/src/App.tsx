@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import CasaDetalhes from './pages/CasaDetalhes';
+import PoliticaPrivacidade from './pages/PoliticaPrivacidade';
 
 // Componente para Proteger Rotas Privadas
 function PrivateRoute({ children }: { children: React.JSX.Element }) {
@@ -60,6 +61,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           {/* Rotas Públicas */}
+          <Route path="/politica-de-privacidade" element={<PoliticaPrivacidade />} />
           <Route 
             path="/login" 
             element={

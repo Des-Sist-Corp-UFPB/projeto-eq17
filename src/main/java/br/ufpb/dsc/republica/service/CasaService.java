@@ -20,11 +20,16 @@ public class CasaService {
     private final CasaRepository casaRepository;
     private final MoradorRepository moradorRepository;
     private final UsuarioRepository usuarioRepository;
+    private final AuditoriaService auditoriaService;
 
-    public CasaService(CasaRepository casaRepository, MoradorRepository moradorRepository, UsuarioRepository usuarioRepository) {
+    public CasaService(CasaRepository casaRepository, 
+                       MoradorRepository moradorRepository, 
+                       UsuarioRepository usuarioRepository,
+                       AuditoriaService auditoriaService) {
         this.casaRepository = casaRepository;
         this.moradorRepository = moradorRepository;
         this.usuarioRepository = usuarioRepository;
+        this.auditoriaService = auditoriaService;
     }
 
     @Transactional(readOnly = true)
@@ -49,6 +54,11 @@ public class CasaService {
         Morador admin = new Morador(criador, novaCasa, PapelMorador.ADMINISTRADOR);
         moradorRepository.save(admin);
 
+        // Auditoria: Criação da Casa
+        auditoriaService.registrar(criador, "CRIACAO_CASA", 
+                String.format("Criou a república '%s' no endereço '%s'.", novaCasa.getNome(), novaCasa.getEndereco()), 
+                "Casa", novaCasa.getId());
+
         return novaCasa;
     }
 
@@ -62,7 +72,14 @@ public class CasaService {
         }
 
         Morador morador = new Morador(usuario, casa, PapelMorador.MORADOR);
-        return moradorRepository.save(morador);
+        Morador moradorSalvo = moradorRepository.save(morador);
+
+        // Auditoria: Entrada de moradores
+        auditoriaService.registrarAcaoUsuarioLogado("ENTRADA_MORADORES", 
+                String.format("Adicionou o morador '%s' (%s) à república '%s'.", usuario.getNome(), usuario.getEmail(), casa.getNome()), 
+                "Morador", moradorSalvo.getId());
+
+        return moradorSalvo;
     }
 
     @Transactional(readOnly = true)
@@ -76,4 +93,3 @@ public class CasaService {
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não é morador desta casa."));
     }
 }
-

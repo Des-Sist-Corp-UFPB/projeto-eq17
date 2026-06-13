@@ -13,5 +13,6 @@ public interface MoradorRepository extends JpaRepository<Morador, Long> {
     Optional<Morador> findByCasaIdAndUsuarioId(Long casaId, Long usuarioId);
     Optional<Morador> findByCasaIdAndUsuarioEmail(Long casaId, String email);
     boolean existsByCasaIdAndUsuarioId(Long casaId, Long usuarioId);
+    List<Morador> findByUsuarioId(Long usuarioId);
 }
 

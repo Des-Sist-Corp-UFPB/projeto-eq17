@@ -22,19 +22,22 @@ public class DespesaService {
     private final CasaRepository casaRepository;
     private final MoradorRepository moradorRepository;
     private final NotificacaoService notificacaoService;
+    private final AuditoriaService auditoriaService;
 
     public DespesaService(DespesaRepository despesaRepository,
                           DespesaRateioRepository despesaRateioRepository,
                           PagamentoRepository pagamentoRepository,
                           CasaRepository casaRepository,
                           MoradorRepository moradorRepository,
-                          NotificacaoService notificacaoService) {
+                          NotificacaoService notificacaoService,
+                          AuditoriaService auditoriaService) {
         this.despesaRepository = despesaRepository;
         this.despesaRateioRepository = despesaRateioRepository;
         this.pagamentoRepository = pagamentoRepository;
         this.casaRepository = casaRepository;
         this.moradorRepository = moradorRepository;
         this.notificacaoService = notificacaoService;
+        this.auditoriaService = auditoriaService;
     }
 
     @Transactional(readOnly = true)
@@ -114,6 +117,11 @@ public class DespesaService {
             notificacaoService.criarNotificacao(usuario, titulo, mensagem, TipoNotificacao.DESPESA_CRIADA);
         }
 
+        // Auditoria: Criação de despesa
+        auditoriaService.registrarAcaoUsuarioLogado("CRIACAO_DESPESA", 
+                String.format("Criou a despesa '%s' com o valor total de R$ %.2f na casa '%s'.", despesa.getDescricao(), despesa.getValorTotal(), casa.getNome()), 
+                "Despesa", despesa.getId());
+
         return despesa;
     }
 
@@ -135,6 +143,11 @@ public class DespesaService {
 
         // Atualiza status da Despesa
         atualizarStatusDespesa(rateio.getDespesa());
+
+        // Auditoria: Informar Pagamento
+        auditoriaService.registrarAcaoUsuarioLogado("INFORMAR_PAGAMENTO", 
+                String.format("Informou comprovante de pagamento para o rateio de valor R$ %.2f da despesa '%s'.", rateio.getValorDevido(), rateio.getDespesa().getDescricao()), 
+                "DespesaRateio", rateioId);
     }
 
     public void confirmarPagamento(Long pagamentoId) {
@@ -146,6 +159,14 @@ public class DespesaService {
 
         // Atualiza status da Despesa
         atualizarStatusDespesa(pagamento.getRateio().getDespesa());
+
+        // Auditoria: Confirmação de pagamento
+        auditoriaService.registrarAcaoUsuarioLogado("CONFIRMACAO_PAGAMENTO", 
+                String.format("Confirmou pagamento do rateio do morador '%s' no valor de R$ %.2f para a despesa '%s'.", 
+                        pagamento.getRateio().getMorador().getUsuario().getNome(), 
+                        pagamento.getRateio().getValorDevido(), 
+                        pagamento.getRateio().getDespesa().getDescricao()), 
+                "Pagamento", pagamentoId);
     }
 
     public void rejeitarPagamento(Long pagamentoId) {
@@ -157,12 +178,25 @@ public class DespesaService {
 
         // Atualiza status da Despesa
         atualizarStatusDespesa(pagamento.getRateio().getDespesa());
+
+        // Auditoria: Rejeição de pagamento
+        auditoriaService.registrarAcaoUsuarioLogado("REJEITAR_PAGAMENTO", 
+                String.format("Rejeitou o pagamento do rateio do morador '%s' no valor de R$ %.2f para a despesa '%s'.", 
+                        pagamento.getRateio().getMorador().getUsuario().getNome(), 
+                        pagamento.getRateio().getValorDevido(), 
+                        pagamento.getRateio().getDespesa().getDescricao()), 
+                "Pagamento", pagamentoId);
     }
 
     public void excluirDespesa(Long despesaId) {
         Despesa despesa = buscarPorId(despesaId);
         despesa.setExcluido(true);
         despesaRepository.save(despesa);
+
+        // Auditoria: Exclusão lógica de despesa
+        auditoriaService.registrarAcaoUsuarioLogado("EXCLUSAO_LOGICA_DESPESA", 
+                String.format("Excluiu logicamente a despesa '%s' de valor R$ %.2f.", despesa.getDescricao(), despesa.getValorTotal()), 
+                "Despesa", despesaId);
     }
 
     private void atualizarStatusDespesa(Despesa despesa) {
@@ -192,4 +226,3 @@ public class DespesaService {
         despesaRepository.save(despesa);
     }
 }
-

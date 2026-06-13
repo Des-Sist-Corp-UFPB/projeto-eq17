@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
-import { LogOut, Plus, MapPin, Calendar, LayoutDashboard, User, ShieldAlert } from 'lucide-react';
+import { LogOut, Plus, MapPin, Calendar, LayoutDashboard, User, ShieldAlert, Download, Trash2, Shield } from 'lucide-react';
 import NotificacoesMenu from '../components/NotificacoesMenu';
 
 interface Casa {
@@ -78,6 +78,37 @@ export default function Dashboard() {
       setModalError(err.message || 'Erro ao criar república.');
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function handleExportarDados() {
+    try {
+      const response = await api.get<any>('/api/meus-dados');
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(response, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `meus-dados-homehub-${user?.id || 'export'}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    } catch (err: any) {
+      alert(err.message || 'Erro ao exportar dados.');
+    }
+  }
+
+  async function handleExcluirConta() {
+    const confirmacao = window.confirm(
+      "Tem certeza que deseja solicitar a exclusão de sua conta? Esta ação é definitiva.\n\n" +
+      "Se você possuir pendências financeiras (despesas ou pagamentos em aberto nas repúblicas), seus dados serão anonimizados para integridade dos dados comuns do grupo."
+    );
+    if (!confirmacao) return;
+
+    try {
+      await api.delete('/api/meus-dados');
+      alert("Sua conta foi excluída ou anonimizada com sucesso. Você será desconectado.");
+      logout().then(() => navigate('/login'));
+    } catch (err: any) {
+      alert(err.message || 'Erro ao processar exclusão de conta.');
     }
   }
 
@@ -269,6 +300,47 @@ export default function Dashboard() {
               <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Clique aqui para registrar a primeira república e começar a gerenciar.</p>
             </div>
           )}
+        </div>
+
+        {/* Seção LGPD e Privacidade */}
+        <div style={{ marginTop: '56px', borderTop: '1px solid var(--border-muted)', paddingTop: '40px' }}>
+          <div className="cyber-card" style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'space-between', 
+            alignItems: 'flex-start', 
+            gap: '24px',
+            position: 'relative'
+          }}>
+            <div style={{ width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span className="cyber-badge cyber-badge-blue" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Shield size={12} /> Privacidade & LGPD
+                </span>
+              </div>
+              <h3 style={{ fontSize: '1.4rem', marginBottom: '8px', letterSpacing: '-0.01em' }}>Seus Direitos de Privacidade</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5', maxWidth: '680px' }}>
+                Gerencie seus dados pessoais em conformidade com a Lei Geral de Proteção de Dados (LGPD). Você tem o direito de baixar uma cópia completa de suas informações cadastradas (incluindo histórico financeiro e tarefas) ou solicitar a exclusão/anonimização permanente de sua conta no HomeHub.
+              </p>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px' }}>
+              <button
+                onClick={handleExportarDados}
+                className="cyber-btn cyber-btn-secondary"
+                style={{ fontSize: '0.85rem', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Download size={16} /> Exportar meus Dados (JSON)
+              </button>
+              <button
+                onClick={handleExcluirConta}
+                className="cyber-btn cyber-btn-danger"
+                style={{ fontSize: '0.85rem', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Trash2 size={16} /> Excluir Minha Conta
+              </button>
+            </div>
+          </div>
         </div>
       </main>
 

@@ -7,6 +7,7 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [aceitouTermos, setAceitouTermos] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { register } = useAuth();
@@ -24,11 +25,16 @@ export default function Register() {
       return;
     }
 
+    if (!aceitouTermos) {
+      setLocalError('Você precisa ler e aceitar a Política de Privacidade para se cadastrar.');
+      return;
+    }
+
     setSubmitting(true);
     setLocalError(null);
 
     try {
-      await register(name, email, password);
+      await register(name, email, password, true, '1.0');
       navigate('/');
     } catch (err: any) {
       setLocalError(err.message || 'Erro ao efetuar cadastro. Verifique os dados.');
@@ -132,6 +138,38 @@ export default function Register() {
               disabled={submitting}
               autoComplete="new-password"
             />
+          </div>
+
+          <div style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '8px',
+            marginBottom: '24px'
+          }}>
+            <input
+              type="checkbox"
+              id="aceitouTermosLgpd"
+              checked={aceitouTermos}
+              onChange={(e) => setAceitouTermos(e.target.checked)}
+              disabled={submitting}
+              style={{ marginTop: '3px', cursor: 'pointer' }}
+            />
+            <label htmlFor="aceitouTermosLgpd" style={{
+              fontSize: '0.85rem',
+              color: 'var(--text-secondary)',
+              lineHeight: '1.4',
+              cursor: 'pointer'
+            }}>
+              Declaro que li e concordo com a{' '}
+              <Link
+                to="/politica-de-privacidade"
+                target="_blank"
+                style={{ color: 'var(--color-accent-orange)', textDecoration: 'none', fontWeight: 600 }}
+              >
+                Política de Privacidade
+              </Link>{' '}
+              e autorizo o tratamento dos meus dados pessoais conforme a LGPD.
+            </label>
           </div>
 
           <button

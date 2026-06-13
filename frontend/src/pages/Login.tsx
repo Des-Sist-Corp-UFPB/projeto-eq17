@@ -145,6 +145,24 @@ export default function Login() {
             Criar conta
           </Link>
         </div>
+
+        <div style={{
+          textAlign: 'center',
+          fontSize: '0.8rem',
+          marginTop: '16px',
+          color: 'var(--text-secondary)',
+        }}>
+          Ao acessar você concorda com a nossa{' '}
+          <Link
+            to="/politica-de-privacidade"
+            style={{
+              color: 'var(--color-accent-blue)',
+              textDecoration: 'underline',
+            }}
+          >
+            Política de Privacidade
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -22,13 +22,18 @@ public class TarefaService {
     private final CasaRepository casaRepository;
     private final MoradorRepository moradorRepository;
     private final NotificacaoService notificacaoService;
+    private final AuditoriaService auditoriaService;
 
-    public TarefaService(TarefaRepository tarefaRepository, CasaRepository casaRepository, 
-                         MoradorRepository moradorRepository, NotificacaoService notificacaoService) {
+    public TarefaService(TarefaRepository tarefaRepository,
+                         CasaRepository casaRepository, 
+                         MoradorRepository moradorRepository,
+                         NotificacaoService notificacaoService,
+                         AuditoriaService auditoriaService) {
         this.tarefaRepository = tarefaRepository;
         this.casaRepository = casaRepository;
         this.moradorRepository = moradorRepository;
         this.notificacaoService = notificacaoService;
+        this.auditoriaService = auditoriaService;
     }
 
     @Transactional(readOnly = true)
@@ -65,19 +70,45 @@ public class TarefaService {
             );
         }
 
-        return tarefaRepository.save(tarefa);
+        Tarefa tarefaSalva = tarefaRepository.save(tarefa);
+
+        // Auditoria: Criação de tarefa
+        String responsavelNome = tarefaSalva.getResponsavel() != null ? tarefaSalva.getResponsavel().getUsuario().getNome() : "Sem responsável";
+        auditoriaService.registrarAcaoUsuarioLogado("CRIACAO_TAREFA", 
+                String.format("Criou a tarefa '%s' na casa '%s' atribuída a '%s'.", tarefaSalva.getDescricao(), casa.getNome(), responsavelNome), 
+                "Tarefa", tarefaSalva.getId());
+
+        return tarefaSalva;
     }
 
     public Tarefa alterarStatus(Long tarefaId, StatusTarefa status) {
         Tarefa tarefa = buscarPorId(tarefaId);
+        StatusTarefa statusAntigo = tarefa.getStatus();
         tarefa.setStatus(status);
-        return tarefaRepository.save(tarefa);
+        Tarefa tarefaSalva = tarefaRepository.save(tarefa);
+
+        // Auditoria: Conclusão ou Alteração
+        String acao = status == StatusTarefa.CONCLUIDA ? "CONCLUSAO_TAREFA" : "ALTERACAO_TAREFA";
+        String descricao = status == StatusTarefa.CONCLUIDA ? 
+                String.format("Concluiu a tarefa '%s' na casa '%s'.", tarefaSalva.getDescricao(), tarefaSalva.getCasa().getNome()) :
+                String.format("Alterou o status da tarefa '%s' de '%s' para '%s'.", tarefaSalva.getDescricao(), statusAntigo.name(), status.name());
+
+        auditoriaService.registrarAcaoUsuarioLogado(acao, descricao, "Tarefa", tarefaId);
+
+        return tarefaSalva;
     }
 
     public Tarefa delegarTarefa(Long tarefaId, Long moradorId) {
         Tarefa tarefa = buscarPorId(tarefaId);
+        String responsavelAntigo = tarefa.getResponsavel() != null ? tarefa.getResponsavel().getUsuario().getNome() : "Ninguém";
+        
         if (moradorId == null) {
             tarefa.setResponsavel(null);
+            
+            // Auditoria: Desatribuição da tarefa
+            auditoriaService.registrarAcaoUsuarioLogado("ALTERACAO_TAREFA", 
+                    String.format("Removeu a responsabilidade da tarefa '%s' (responsável anterior: %s).", tarefa.getDescricao(), responsavelAntigo), 
+                    "Tarefa", tarefaId);
         } else {
             Morador morador = moradorRepository.findById(moradorId)
                     .orElseThrow(() -> new IllegalArgumentException("Morador não encontrado."));
@@ -93,6 +124,12 @@ public class TarefaService {
                 "Você foi designado como responsável pela tarefa: '" + tarefa.getDescricao() + "'.",
                 TipoNotificacao.TAREFA_ATRIBUIDA
             );
+
+            // Auditoria: Redelegação da tarefa
+            auditoriaService.registrarAcaoUsuarioLogado("ALTERACAO_TAREFA", 
+                    String.format("Delegou a responsabilidade da tarefa '%s' para '%s' (responsável anterior: %s).", 
+                            tarefa.getDescricao(), morador.getUsuario().getNome(), responsavelAntigo), 
+                    "Tarefa", tarefaId);
         }
         return tarefaRepository.save(tarefa);
     }
@@ -100,6 +137,10 @@ public class TarefaService {
     public void excluirTarefa(Long tarefaId) {
         Tarefa tarefa = buscarPorId(tarefaId);
         tarefaRepository.delete(tarefa);
+
+        // Auditoria: Exclusão de tarefa
+        auditoriaService.registrarAcaoUsuarioLogado("EXCLUSAO_TAREFA", 
+                String.format("Excluiu permanentemente a tarefa '%s' na casa '%s'.", tarefa.getDescricao(), tarefa.getCasa().getNome()), 
+                "Tarefa", tarefaId);
     }
 }
-
