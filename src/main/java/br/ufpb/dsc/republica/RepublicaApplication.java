@@ -37,6 +37,33 @@ public class RepublicaApplication {
      * @param args argumentos de linha de comando (podem sobrescrever propriedades do application.yml)
      */
     public static void main(String[] args) {
+        // Carrega as variáveis do arquivo .env para o ambiente de desenvolvimento local (se existir)
+        try {
+            java.nio.file.Path envPath = java.nio.file.Paths.get(".env");
+            if (java.nio.file.Files.exists(envPath)) {
+                java.nio.file.Files.readAllLines(envPath).forEach(line -> {
+                    line = line.trim();
+                    if (!line.isEmpty() && !line.startsWith("#") && line.contains("=")) {
+                        int index = line.indexOf("=");
+                        String key = line.substring(0, index).trim();
+                        String value = line.substring(index + 1).trim();
+                        // Remove aspas simples ou duplas se presentes
+                        if (value.startsWith("\"") && value.endsWith("\"")) {
+                            value = value.substring(1, value.length() - 1);
+                        } else if (value.startsWith("'") && value.endsWith("'")) {
+                            value = value.substring(1, value.length() - 1);
+                        }
+                        // Define a propriedade se ela não estiver presente na JVM ou nas variáveis de ambiente
+                        if (System.getenv(key) == null && System.getProperty(key) == null) {
+                            System.setProperty(key, value);
+                        }
+                    }
+                });
+            }
+        } catch (Exception e) {
+            System.err.println("Aviso: Não foi possível ler o arquivo .env: " + e.getMessage());
+        }
+
         SpringApplication.run(RepublicaApplication.class, args);
     }
 }

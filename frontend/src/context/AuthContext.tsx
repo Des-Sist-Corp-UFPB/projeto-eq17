@@ -46,7 +46,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function login(email: string, targetPassword: string) {
-    setIsLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
@@ -63,13 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(err.message || 'Erro ao realizar login');
       setIsAuthenticated(false);
       throw err;
-    } finally {
-      setIsLoading(false);
     }
   }
 
   async function register(name: string, email: string, targetPassword: string) {
-    setIsLoading(true);
     setError(null);
     try {
       await api.post('/api/auth/register', { nome: name, email, senha: targetPassword });
@@ -78,13 +74,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (err: any) {
       setError(err.message || 'Erro ao realizar cadastro');
       throw err;
-    } finally {
-      setIsLoading(false);
     }
   }
 
   async function logout() {
-    setIsLoading(true);
     try {
       await api.post('/api/auth/logout');
     } catch {
@@ -92,7 +85,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setUser(null);
       setIsAuthenticated(false);
-      setIsLoading(false);
     }
   }
 
