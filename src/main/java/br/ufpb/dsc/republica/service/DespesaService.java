@@ -5,12 +5,14 @@ import br.ufpb.dsc.republica.dto.DespesaForm;
 import br.ufpb.dsc.republica.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -23,6 +25,7 @@ public class DespesaService {
     private final MoradorRepository moradorRepository;
     private final NotificacaoService notificacaoService;
     private final AuditoriaService auditoriaService;
+    private final UploadStorageService uploadStorageService;
 
     public DespesaService(DespesaRepository despesaRepository,
                           DespesaRateioRepository despesaRateioRepository,
@@ -30,7 +33,8 @@ public class DespesaService {
                           CasaRepository casaRepository,
                           MoradorRepository moradorRepository,
                           NotificacaoService notificacaoService,
-                          AuditoriaService auditoriaService) {
+                          AuditoriaService auditoriaService,
+                          UploadStorageService uploadStorageService) {
         this.despesaRepository = despesaRepository;
         this.despesaRateioRepository = despesaRateioRepository;
         this.pagamentoRepository = pagamentoRepository;
@@ -38,6 +42,7 @@ public class DespesaService {
         this.moradorRepository = moradorRepository;
         this.notificacaoService = notificacaoService;
         this.auditoriaService = auditoriaService;
+        this.uploadStorageService = uploadStorageService;
     }
 
     @Transactional(readOnly = true)
@@ -148,6 +153,66 @@ public class DespesaService {
         auditoriaService.registrarAcaoUsuarioLogado("INFORMAR_PAGAMENTO", 
                 String.format("Informou comprovante de pagamento para o rateio de valor R$ %.2f da despesa '%s'.", rateio.getValorDevido(), rateio.getDespesa().getDescricao()), 
                 "DespesaRateio", rateioId);
+    }
+
+    public void informarPagamentoComArquivo(Long rateioId, MultipartFile arquivo) {
+        DespesaRateio rateio = despesaRateioRepository.findById(rateioId)
+                .orElseThrow(() -> new IllegalArgumentException("Rateio não encontrado."));
+
+        // Grava o arquivo físico local e gera o nome único
+        String nomeArquivoGerado = uploadStorageService.salvarComprovante(arquivo);
+
+        // Cria ou atualiza o pagamento associado
+        Pagamento pagamento = rateio.getUltimoPagamento();
+        if (pagamento == null || pagamento.getStatus() == StatusPagamento.CONFIRMADO) {
+            pagamento = new Pagamento(rateio, StatusPagamento.INFORMADO);
+        } else {
+            pagamento.setStatus(StatusPagamento.INFORMADO);
+        }
+
+        pagamento.setDataPagamento(Instant.now());
+        pagamento.setComprovante(nomeArquivoGerado);
+        pagamentoRepository.save(pagamento);
+
+        // Atualiza status da Despesa
+        atualizarStatusDespesa(rateio.getDespesa());
+
+        // Auditoria: Informar Pagamento com arquivo físico
+        auditoriaService.registrarAcaoUsuarioLogado("INFORMAR_PAGAMENTO", 
+                String.format("Realizou o upload do comprovante de pagamento físico (%s) para o rateio de valor R$ %.2f da despesa '%s'.", 
+                        arquivo.getOriginalFilename(), rateio.getValorDevido(), rateio.getDespesa().getDescricao()), 
+                "DespesaRateio", rateioId);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean podeVisualizarComprovante(Long pagamentoId, String emailUsuario) {
+        Pagamento pagamento = pagamentoRepository.findById(pagamentoId)
+                .orElseThrow(() -> new IllegalArgumentException("Pagamento não encontrado."));
+
+        DespesaRateio rateio = pagamento.getRateio();
+        Despesa despesa = rateio.getDespesa();
+        Casa casa = despesa.getCasa();
+
+        // 1. O próprio morador dono do rateio/pagamento
+        if (rateio.getMorador().getUsuario().getEmail().equalsIgnoreCase(emailUsuario)) {
+            return true;
+        }
+
+        // 2. O morador responsável pelo pagamento da despesa como um todo
+        if (despesa.getResponsavel().getUsuario().getEmail().equalsIgnoreCase(emailUsuario)) {
+            return true;
+        }
+
+        // 3. Qualquer morador ADMINISTRADOR da casa
+        Optional<Morador> moradorLogadoOpt = moradorRepository.findByCasaIdAndUsuarioEmail(casa.getId(), emailUsuario);
+        if (moradorLogadoOpt.isPresent()) {
+            Morador moradorLogado = moradorLogadoOpt.get();
+            if (moradorLogado.getPapel() == PapelMorador.ADMINISTRADOR) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void confirmarPagamento(Long pagamentoId) {

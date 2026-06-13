@@ -89,7 +89,7 @@ export default function CasaDetalhes() {
   // Rateio Modal
   const [selectedDespesa, setSelectedDespesa] = useState<Despesa | null>(null);
   const [showRateioModal, setShowRateioModal] = useState(false);
-  const [comprovanteInput, setComprovanteInput] = useState('');
+  const [comprovanteArquivo, setComprovanteArquivo] = useState<File | null>(null);
   const [informingPagamento, setInformingPagamento] = useState(false);
   const [rateioError, setRateioError] = useState<string | null>(null);
 
@@ -266,15 +266,18 @@ export default function CasaDetalhes() {
 
   // Pagamentos & Rateios
   async function handleInformPagamento(rateioId: number) {
-    if (!comprovanteInput) {
-      setRateioError('Por favor, informe um link ou descrição do comprovante.');
+    if (!comprovanteArquivo) {
+      setRateioError('Por favor, selecione um arquivo de comprovante (Imagem ou PDF).');
       return;
     }
 
     setInformingPagamento(true);
     setRateioError(null);
     try {
-      const updatedDespesa = await api.post<Despesa>(`/api/despesas/rateio/${rateioId}/pagar`, { comprovante: comprovanteInput });
+      const formData = new FormData();
+      formData.append('comprovante', comprovanteArquivo);
+
+      const updatedDespesa = await api.postMultipart<Despesa>(`/api/despesas/rateio/${rateioId}/pagar`, formData);
       
       // Atualiza os dados
       setData(prev => {
@@ -287,7 +290,7 @@ export default function CasaDetalhes() {
       
       // Atualiza o modal de visualização
       setSelectedDespesa(updatedDespesa);
-      setComprovanteInput('');
+      setComprovanteArquivo(null);
     } catch (err: any) {
       setRateioError(err.message || 'Erro ao informar pagamento.');
     } finally {
@@ -297,7 +300,21 @@ export default function CasaDetalhes() {
 
   async function handleFastPayment(rateioId: number) {
     try {
-      const updatedDespesa = await api.post<Despesa>(`/api/despesas/rateio/${rateioId}/pagar`, { comprovante: "Pago via PIX (Confirmação rápida)" });
+      // Cria uma imagem PNG de 1x1 transparente fictícia
+      const b64 = "iVBOR0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+      const byteCharacters = atob(b64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/png' });
+      const file = new File([blob], 'comprovante_rapido.png', { type: 'image/png' });
+
+      const formData = new FormData();
+      formData.append('comprovante', file);
+
+      const updatedDespesa = await api.postMultipart<Despesa>(`/api/despesas/rateio/${rateioId}/pagar`, formData);
       setData(prev => {
         if (!prev) return prev;
         return {
@@ -310,6 +327,25 @@ export default function CasaDetalhes() {
       }
     } catch (err: any) {
       alert(err.message || 'Erro ao registrar pagamento rápido.');
+    }
+  }
+
+  async function handleVisualizarComprovante(pagamentoId: number) {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/despesas/pagamento/${pagamentoId}/comprovante`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Não foi possível obter o comprovante ou acesso negado.');
+      }
+
+      const blob = await response.blob();
+      const fileUrl = URL.createObjectURL(blob);
+      window.open(fileUrl, '_blank');
+    } catch (err: any) {
+      alert(err.message || 'Erro ao carregar o comprovante.');
     }
   }
 
@@ -1198,7 +1234,7 @@ export default function CasaDetalhes() {
                 onClick={() => {
                   setShowRateioModal(false);
                   setRateioError(null);
-                  setComprovanteInput('');
+                  setComprovanteArquivo(null);
                 }}
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
               >
@@ -1227,6 +1263,7 @@ export default function CasaDetalhes() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
               {selectedDespesa.rateios.map((r) => {
                 const isMyRateio = r.morador.id === moradorLogado.id;
+                const podeVerComprovante = isMyRateio || isAdm || (selectedDespesa.responsavel.id === moradorLogado.id);
                 
                 return (
                   <div 
@@ -1266,7 +1303,7 @@ export default function CasaDetalhes() {
                       <div style={{ 
                         fontSize: '0.8rem', 
                         color: 'var(--text-secondary)', 
-                        background: 'rgba(0,0,0,0.2)', 
+                        background: 'rgba(0,0,0,0.05)', 
                         padding: '10px 12px', 
                         borderRadius: '6px', 
                         borderLeft: '2px solid var(--color-accent-blue)',
@@ -1276,7 +1313,26 @@ export default function CasaDetalhes() {
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <FileText size={14} style={{ color: 'var(--color-accent-blue)' }} />
-                          <span>Comprovante: <strong>{r.comprovante}</strong></span>
+                          {podeVerComprovante ? (
+                            <button
+                              onClick={() => handleVisualizarComprovante(r.pagamentoId!)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'var(--color-accent-blue)',
+                                textDecoration: 'underline',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                padding: 0,
+                                fontSize: '0.8rem',
+                                fontFamily: 'var(--font-body)'
+                              }}
+                            >
+                              Visualizar Comprovante Pix
+                            </button>
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)' }}>Comprovante Anexado (Privado)</span>
+                          )}
                         </div>
 
                         {r.dataPagamento && (
@@ -1300,15 +1356,18 @@ export default function CasaDetalhes() {
                         border: '1px dashed rgba(0, 242, 254, 0.2)'
                       }}>
                         <div className="cyber-input-group" style={{ flexGrow: 1, marginBottom: 0 }}>
-                          <label className="cyber-input-label" style={{ fontSize: '0.7rem' }}>Informar Chave Pix / Comprovante (Texto/Link)</label>
+                          <label className="cyber-input-label" style={{ fontSize: '0.7rem' }}>Anexar Comprovante Pix (Imagem ou PDF)</label>
                           <input
-                            type="text"
+                            type="file"
                             className="cyber-input"
-                            placeholder="Ex: Transação ID 1234567"
-                            value={comprovanteInput}
-                            onChange={(e) => setComprovanteInput(e.target.value)}
+                            accept="image/*,application/pdf"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                setComprovanteArquivo(e.target.files[0]);
+                              }
+                            }}
                             disabled={informingPagamento}
-                            style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                            style={{ padding: '6px 12px', fontSize: '0.85rem' }}
                           />
                         </div>
                         <button
@@ -1366,7 +1425,7 @@ export default function CasaDetalhes() {
                 onClick={() => {
                   setShowRateioModal(false);
                   setRateioError(null);
-                  setComprovanteInput('');
+                  setComprovanteArquivo(null);
                 }}
                 className="cyber-btn cyber-btn-secondary"
                 style={{ padding: '10px 20px', fontSize: '0.85rem' }}

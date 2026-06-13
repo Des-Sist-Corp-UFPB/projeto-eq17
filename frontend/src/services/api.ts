@@ -25,7 +25,9 @@ export async function apiRequest<T = any>(endpoint: string, options: RequestOpti
   };
 
   if (body) {
-    if (isFormUrlEncoded) {
+    if (body instanceof FormData) {
+      fetchOptions.body = body;
+    } else if (isFormUrlEncoded) {
       fetchOptions.headers = {
         ...fetchOptions.headers,
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -68,6 +70,9 @@ export const api = {
     
   post: <T>(endpoint: string, body?: any, isFormUrlEncoded = false, headers?: Record<string, string>) => 
     apiRequest<T>(endpoint, { method: 'POST', body, isFormUrlEncoded, headers }),
+    
+  postMultipart: <T>(endpoint: string, formData: FormData, headers?: Record<string, string>) => 
+    apiRequest<T>(endpoint, { method: 'POST', body: formData, headers }),
     
   put: <T>(endpoint: string, body?: any, headers?: Record<string, string>) => 
     apiRequest<T>(endpoint, { method: 'PUT', body, headers }),
