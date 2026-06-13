@@ -26,12 +26,9 @@ public class Usuario {
     private String email;
 
     @NotBlank(message = "A senha é obrigatória")
-    @Size(min = 8, max = 100, message = "A senha deve ter entre 8 e 100 caracteres")
+    @Size(min = 6, max = 100, message = "A senha deve ter entre 6 e 100 caracteres")
     @Column(name = "senha", nullable = false, length = 100)
     private String senha;
-
-    @Column(name = "ativo", nullable = false)
-    private Boolean ativo = false;
 
     @Column(name = "criado_em", nullable = false, updatable = false)
     private Instant criadoEm;
@@ -39,9 +36,6 @@ public class Usuario {
     @PrePersist
     protected void prePersist() {
         this.criadoEm = Instant.now();
-        if (this.ativo == null) {
-            this.ativo = false;
-        }
     }
 
     public Usuario() {
@@ -93,21 +87,12 @@ public class Usuario {
         this.criadoEm = criadoEm;
     }
 
-    public Boolean getAtivo() {
-        return ativo;
-    }
-
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
-    }
-
     @Override
     public String toString() {
         return "Usuario{" +
                 "id=" + id +
                 ", nome='" + nome + '\'' +
                 ", email='" + email + '\'' +
-                ", ativo=" + ativo +
                 '}';
     }
 }

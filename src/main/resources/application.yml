@@ -3,23 +3,6 @@ spring:
     name: republicas
   profiles:
     active: dev
-  mail:
-    host: smtp.resend.com
-    port: 465
-    username: resend
-    password: ${RESEND_API_KEY:sua-chave-do-resend-aqui}
-    from: ${EMAIL_FROM:onboarding@resend.dev}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: false
-          ssl:
-            enable: true
-
-app:
-  url: ${APP_URL:http://localhost:8080}
 
 # Actuator - monitoramento da aplicação
 # Acesse: http://localhost:8080/actuator/health

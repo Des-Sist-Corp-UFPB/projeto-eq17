@@ -34,9 +34,6 @@ services:
       DATABASE_URL: ${DATABASE_URL:-jdbc:postgresql://postgres:5432/eq17}
       DATABASE_USERNAME: ${DATABASE_USERNAME}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
-      RESEND_API_KEY: ${RESEND_API_KEY}
-      EMAIL_FROM: ${EMAIL_FROM}
-      APP_URL: ${APP_URL}
     ports:
       # Expõe a porta de forma configurável para evitar colisões
       - "${HOST_PORT:-8017}:8080"
