@@ -116,7 +116,7 @@ public class Auditoria {
     }
 
     public void setEntidadeId(Long entidadeId) {
-        this.entidadeId = id;
+        this.entidadeId = entidadeId;
     }
 
     @Override

@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -30,12 +31,14 @@ public class AuditoriaService {
         this.request = request;
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Auditoria registrar(Usuario usuario, String acao, String descricao, String entidadeAfetada, Long entidadeId) {
         String ip = obterIpCliente();
         Auditoria auditoria = new Auditoria(usuario, acao, descricao, ip, entidadeAfetada, entidadeId);
         return auditoriaRepository.save(auditoria);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Auditoria registrarAcaoUsuarioLogado(String acao, String descricao, String entidadeAfetada, Long entidadeId) {
         Usuario usuario = obterUsuarioLogado();
         return registrar(usuario, acao, descricao, entidadeAfetada, entidadeId);
