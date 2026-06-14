@@ -55,8 +55,9 @@ WORKDIR /app
 # Copiar apenas o JAR gerado no estágio do backend
 COPY --from=backend-builder /build/target/*.jar app.jar
 
-# Definir owner do arquivo
-RUN chown republica:republica app.jar
+# Criar diretório de uploads e definir permissões recursivas para o usuário republica
+RUN mkdir -p /app/uploads/comprovantes && \
+    chown -R republica:republica /app
 
 # Trocar para usuário não-root
 USER republica
