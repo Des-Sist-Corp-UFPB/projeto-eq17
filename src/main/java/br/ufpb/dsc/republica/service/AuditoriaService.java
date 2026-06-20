@@ -31,14 +31,14 @@ public class AuditoriaService {
         this.request = request;
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public Auditoria registrar(Usuario usuario, String acao, String descricao, String entidadeAfetada, Long entidadeId) {
         String ip = obterIpCliente();
         Auditoria auditoria = new Auditoria(usuario, acao, descricao, ip, entidadeAfetada, entidadeId);
         return auditoriaRepository.save(auditoria);
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public Auditoria registrarAcaoUsuarioLogado(String acao, String descricao, String entidadeAfetada, Long entidadeId) {
         Usuario usuario = obterUsuarioLogado();
         return registrar(usuario, acao, descricao, entidadeAfetada, entidadeId);

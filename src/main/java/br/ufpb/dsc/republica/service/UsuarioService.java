@@ -129,7 +129,7 @@ public class UsuarioService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public LgpdExportDto exportarDados(Long usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
