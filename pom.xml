@@ -150,6 +150,16 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco-maven-plugin.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>br/ufpb/dsc/republica/dto/**</exclude>
+                        <exclude>br/ufpb/dsc/republica/domain/**</exclude>
+                        <exclude>br/ufpb/dsc/republica/exception/**</exclude>
+                        <exclude>br/ufpb/dsc/republica/config/**</exclude>
+                        <exclude>br/ufpb/dsc/republica/controller/**</exclude>
+                        <exclude>br/ufpb/dsc/republica/RepublicaApplication.class</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <goals><goal>prepare-agent</goal></goals>

@@ -217,4 +217,106 @@ class UsuarioServiceTest {
 
         verify(auditoriaService, times(1)).registrar(eq(usuario), eq("EXPORTACAO_DADOS"), anyString(), eq("Usuario"), eq(usuarioId));
     }
+
+    @Test
+    void buscarPorIdDeveRetornarUsuarioSeExistir() {
+        Usuario usuario = new Usuario("Teste ID", "testeid@email.com", "senhaHash");
+        when(usuarioRepository.findById(99L)).thenReturn(Optional.of(usuario));
+
+        Optional<Usuario> result = usuarioService.buscarPorId(99L);
+
+        assertTrue(result.isPresent());
+        assertEquals("Teste ID", result.get().getNome());
+    }
+
+    @Test
+    void excluirUsuarioDeveLancarExcecaoSeUsuarioNaoExistir() {
+        when(usuarioRepository.findById(999L)).thenReturn(Optional.empty());
+        assertThrows(IllegalArgumentException.class, () -> usuarioService.excluirUsuario(999L));
+    }
+
+    @Test
+    void exportarDadosDeveLancarExcecaoSeUsuarioNaoExistir() {
+        when(usuarioRepository.findById(999L)).thenReturn(Optional.empty());
+        assertThrows(IllegalArgumentException.class, () -> usuarioService.exportarDados(999L));
+    }
+
+    @Test
+    void possuiPendenciasFinanceirasDeveIgnorarDespesasExcluidas() {
+        Long usuarioId = 1L;
+        Morador morador = new Morador();
+        morador.setId(10L);
+        
+        Despesa despesaExcluida = new Despesa();
+        despesaExcluida.setExcluido(true);
+        
+        DespesaRateio rateio = new DespesaRateio(despesaExcluida, morador, BigDecimal.TEN);
+        
+        when(moradorRepository.findByUsuarioId(usuarioId)).thenReturn(List.of(morador));
+        when(despesaRateioRepository.findByMoradorId(10L)).thenReturn(List.of(rateio));
+
+        boolean possuiPendencias = usuarioService.possuiPendenciasFinanceiras(usuarioId);
+
+        assertFalse(possuiPendencias);
+    }
+
+    @Test
+    void exportarDadosDeveRetornarCompletoComCasasTarefasDespesasPagamentos() {
+        Long usuarioId = 1L;
+        Usuario usuario = new Usuario("João Silva", "joao@email.com", "senhaCripto");
+        usuario.setId(usuarioId);
+        usuario.setAceitouTermosLgpd(true);
+        usuario.setVersaoTermoLgpd("1.0");
+
+        Casa casa = new Casa("República Universitária", "Rua das Laranjeiras");
+        casa.setId(100L);
+
+        Morador morador = new Morador(usuario, casa, PapelMorador.ADMINISTRADOR);
+        morador.setId(10L);
+
+        Tarefa tarefa = new Tarefa(casa, "Limpar sala", StatusTarefa.PENDENTE);
+        tarefa.setId(200L);
+
+        Despesa despesa = new Despesa(casa, "Internet", BigDecimal.valueOf(120), LocalDate.now(), morador, StatusDespesa.PENDENTE, TipoDespesa.FIXA, "chave-pix");
+        despesa.setId(300L);
+        despesa.setExcluido(false);
+
+        DespesaRateio rateio = new DespesaRateio(despesa, morador, BigDecimal.valueOf(40));
+        rateio.setId(400L);
+
+        Pagamento pagamento = new Pagamento(rateio, StatusPagamento.PENDENTE);
+        pagamento.setId(500L);
+        rateio.getPagamentos().add(pagamento);
+
+        Auditoria auditoriaLog = new Auditoria(usuario, "CADASTRO", "Log de teste", "127.0.0.1", "Usuario", 1L);
+        auditoriaLog.setId(600L);
+
+        when(usuarioRepository.findById(usuarioId)).thenReturn(Optional.of(usuario));
+        when(moradorRepository.findByUsuarioId(usuarioId)).thenReturn(List.of(morador));
+        when(tarefaRepository.findByResponsavelId(10L)).thenReturn(List.of(tarefa));
+        when(despesaRateioRepository.findByMoradorId(10L)).thenReturn(List.of(rateio));
+        when(auditoriaService.buscarPorUsuario(usuarioId)).thenReturn(List.of(auditoriaLog));
+
+        LgpdExportDto exportDto = usuarioService.exportarDados(usuarioId);
+
+        assertNotNull(exportDto);
+        assertEquals(1, exportDto.casas().size());
+        assertEquals("República Universitária", exportDto.casas().get(0).nome());
+        assertEquals("ADMINISTRADOR", exportDto.casas().get(0).papel());
+
+        assertEquals(1, exportDto.tarefas().size());
+        assertEquals("Limpar sala", exportDto.tarefas().get(0).descricao());
+        assertEquals("PENDENTE", exportDto.tarefas().get(0).status());
+
+        assertEquals(1, exportDto.despesas().size());
+        assertEquals("Internet", exportDto.despesas().get(0).descricao());
+        assertEquals("FIXA", exportDto.despesas().get(0).tipo());
+
+        assertEquals(1, exportDto.pagamentos().size());
+        assertEquals(BigDecimal.valueOf(40), exportDto.pagamentos().get(0).valorDevido());
+        assertEquals("PENDENTE", exportDto.pagamentos().get(0).status());
+
+        assertEquals(1, exportDto.auditorias().size());
+        assertEquals("CADASTRO", exportDto.auditorias().get(0).acao());
+    }
 }
