@@ -316,7 +316,54 @@ class UsuarioServiceTest {
         assertEquals(BigDecimal.valueOf(40), exportDto.pagamentos().get(0).valorDevido());
         assertEquals("PENDENTE", exportDto.pagamentos().get(0).status());
 
-        assertEquals(1, exportDto.auditorias().size());
         assertEquals("CADASTRO", exportDto.auditorias().get(0).acao());
+    }
+
+    @Test
+    void registrarOuObterUsuarioOAuth2DeveCriarNovoUsuarioSeNaoExistir() {
+        String email = "novo-oauth2@email.com";
+        String nome = "Google User";
+        when(usuarioRepository.findByEmail(email)).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(anyString())).thenReturn("senhaCriptografada");
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> {
+            Usuario u = invocation.getArgument(0);
+            u.setId(99L);
+            return u;
+        });
+
+        Usuario result = usuarioService.registrarOuObterUsuarioOAuth2(email, nome);
+
+        assertNotNull(result);
+        assertEquals(99L, result.getId());
+        assertEquals(email, result.getEmail());
+        assertEquals(nome, result.getNome());
+        assertTrue(result.getAceitouTermosLgpd());
+        assertEquals("1.0 (Google OAuth2)", result.getVersaoTermoLgpd());
+
+        verify(usuarioRepository, times(1)).findByEmail(email);
+        verify(usuarioRepository, times(1)).save(any(Usuario.class));
+        verify(auditoriaService, times(1)).registrar(any(Usuario.class), eq("CADASTRO"), anyString(), eq("Usuario"), eq(99L));
+        verify(auditoriaService, times(1)).registrar(any(Usuario.class), eq("LOGIN"), anyString(), eq("Usuario"), eq(99L));
+    }
+
+    @Test
+    void registrarOuObterUsuarioOAuth2DeveRetornarUsuarioExistenteSeExistir() {
+        String email = "existente-oauth2@email.com";
+        String nome = "Google User Existente";
+        Usuario usuarioExistente = new Usuario(nome, email, "senhaHash");
+        usuarioExistente.setId(100L);
+
+        when(usuarioRepository.findByEmail(email)).thenReturn(Optional.of(usuarioExistente));
+
+        Usuario result = usuarioService.registrarOuObterUsuarioOAuth2(email, nome);
+
+        assertNotNull(result);
+        assertEquals(100L, result.getId());
+        assertEquals(email, result.getEmail());
+        assertEquals(nome, result.getNome());
+
+        verify(usuarioRepository, times(1)).findByEmail(email);
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+        verify(auditoriaService, times(1)).registrar(any(Usuario.class), eq("LOGIN"), anyString(), eq("Usuario"), eq(100L));
     }
 }

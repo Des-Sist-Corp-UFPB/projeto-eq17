@@ -29,7 +29,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, CustomOAuth2SuccessHandler customOAuth2SuccessHandler) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
@@ -78,6 +78,11 @@ public class SecurityConfig {
                             response.getWriter().write("{\"erro\": \"Credenciais inválidas. Verifique seu e-mail e senha.\"}");
                         })
                         .permitAll()
+                )
+
+                // === OAUTH2 LOGIN ===
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(customOAuth2SuccessHandler)
                 )
 
                 // === LOGOUT ===

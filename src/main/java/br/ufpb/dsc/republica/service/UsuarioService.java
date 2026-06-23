@@ -78,6 +78,34 @@ public class UsuarioService {
         return usuarioSalvo;
     }
 
+    @Transactional
+    public Usuario registrarOuObterUsuarioOAuth2(String email, String nome) {
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+        if (usuarioOpt.isPresent()) {
+            Usuario usuario = usuarioOpt.get();
+            auditoriaService.registrar(usuario, "LOGIN", "Login realizado com sucesso via Google OAuth2.", "Usuario", usuario.getId());
+            return usuario;
+        }
+
+        Usuario novoUsuario = new Usuario();
+        novoUsuario.setEmail(email);
+        novoUsuario.setNome(nome != null ? nome : email.split("@")[0]);
+
+        String senhaAleatoria = UUID.randomUUID().toString();
+        novoUsuario.setSenha(passwordEncoder.encode(senhaAleatoria));
+
+        novoUsuario.setAceitouTermosLgpd(true);
+        novoUsuario.setDataAceiteLgpd(Instant.now());
+        novoUsuario.setVersaoTermoLgpd("1.0 (Google OAuth2)");
+
+        Usuario usuarioSalvo = usuarioRepository.save(novoUsuario);
+
+        auditoriaService.registrar(usuarioSalvo, "CADASTRO", "Usuário cadastrado automaticamente via Google OAuth2 com termos da LGPD na versão 1.0 (Google OAuth2)", "Usuario", usuarioSalvo.getId());
+        auditoriaService.registrar(usuarioSalvo, "LOGIN", "Login realizado com sucesso via Google OAuth2.", "Usuario", usuarioSalvo.getId());
+
+        return usuarioSalvo;
+    }
+
     @Transactional(readOnly = true)
     public boolean possuiPendenciasFinanceiras(Long usuarioId) {
         List<Morador> moradores = moradorRepository.findByUsuarioId(usuarioId);
