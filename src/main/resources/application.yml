@@ -29,3 +29,6 @@ management:
     health:
       # Detalhes do health só são exibidos para usuários autenticados
       show-details: when-authorized
+
+server:
+  forward-headers-strategy: native
