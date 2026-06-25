@@ -5,9 +5,9 @@
 | **Data** | 2026-06-25 |
 | **Repositório** | https://github.com/des-sist-corp-ufpb/projeto-eq17 |
 | **Aplicação** | https://eq17.dsc.rodrigor.com |
-| **Período de atividade** | 2026-06-22 → 2026-06-22 |
-| **Total de commits** (sem merges) | 1 |
-| **Integrantes** | @Ramonzin-dev |
+| **Período de atividade** | 2026-06-22 → 2026-06-25 |
+| **Total de commits** (sem merges, branch main) | 2 |
+| **Integrantes** | @Ramonzin-dev, Ramon Alves Da Silva (@GimiliOgrande) |
 
 ---
 
@@ -103,18 +103,25 @@
 
 ### Resumo
 
-| Usuário | Commits | % commits | Linhas adicionadas | Linhas no código atual | % código atual |
-|---------|---------|-----------|-------------------|----------------------|----------------|
-| @Ramonzin-dev | 1 | 100% | 15.461 | 10.368 | 100% |
+| Usuário | Commits (main) | Commits (GitHub API) | Linhas adicionadas | Linhas no código atual | % código atual |
+|---------|---------------|---------------------|-------------------|----------------------|----------------|
+| @Ramonzin-dev | 1 | **36** ⚠️ | 15.461 | 10.368 | 100% |
+| Ramon Alves Da Silva (@GimiliOgrande) | 0 | **8** ⚠️ | 0 | 0 | 0% |
+| *(sem login GitHub)* | 1 | 50% | — | — | — |
+
+> **⚠️ Divergência entre commits locais e GitHub API:**
+> - **@Ramonzin-dev**: 1 commit(s) na branch `main` vs **36** registrados na API GitHub (commits em branches não mergeadas ou absorvidos via squash-merge sem preservação de autoria).
+> - **@GimiliOgrande**: 0 commit(s) na branch `main` vs **8** registrados na API GitHub (commits em branches não mergeadas ou absorvidos via squash-merge sem preservação de autoria).
+>
 
 ### Contribuição por Camada
 
-| Camada | Total linhas | @Ramonzin-dev |
-|--------|-------------|---------|
-| Controller | 2.048 | 100% |
-| Frontend | 792 | 100% |
-| Repository | 138 | 100% |
-| Service | 2.782 | 100% |
+| Camada | Total linhas | @Ramonzin-dev | Ramon Alves Da Silva (@GimiliOgrande) |
+|--------|-------------|---------|---------|
+| Controller | 2.048 | 100% | 0% |
+| Frontend | 792 | 100% | 0% |
+| Repository | 138 | 100% | 0% |
+| Service | 2.782 | 100% | 0% |
 
 ---
 
@@ -122,48 +129,48 @@
 
 Baseado em `git blame` nos arquivos de controller e service.
 
-| Arquivo | Total linhas | @Ramonzin-dev |
-|---------|-------------|---------|
-| `UsuarioServiceTest.java` | 369 | 100% |
-| `DespesaService.java` | 293 | 100% |
-| `UsuarioService.java` | 258 | 100% |
-| `DespesaServiceTest.java` | 247 | 100% |
-| `layout.html` | 240 | 100% |
-| `republica_fragments.html` | 237 | 100% |
-| `casa_detalhes.html` | 229 | 100% |
-| `DespesaController.java` | 219 | 100% |
-| `TarefaServiceTest.java` | 208 | 100% |
-| `UploadStorageServiceTest.java` | 197 | 100% |
-| `AuditoriaServiceTest.java` | 168 | 100% |
-| `NotificacaoServiceTest.java` | 162 | 100% |
-| `CasaServiceTest.java` | 154 | 100% |
-| `CasaController.java` | 148 | 100% |
-| `TarefaService.java` | 146 | 100% |
-| `cadastro.html` | 135 | 100% |
-| `login.html` | 130 | 100% |
-| `dashboard.html` | 122 | 100% |
-| `NotificacaoService.java` | 103 | 100% |
-| `CasaService.java` | 95 | 100% |
-| `NotificacaoController.java` | 94 | 100% |
-| `UploadStorageService.java` | 87 | 100% |
-| `AuditoriaService.java` | 86 | 100% |
-| `TarefaController.java` | 86 | 100% |
-| `V2__criar_tabelas_sistema_republica.sql` | 84 | 100% |
-| `api.ts` | 82 | 100% |
-| `DashboardController.java` | 56 | 100% |
-| `LgpdController.java` | 53 | 100% |
-| `RepublicaApplicationTests.java` | 52 | 100% |
-| `CadastroController.java` | 45 | 100% |
-| `PingControllerTest.java` | 45 | 100% |
-| `RepublicaApplication.java` | 42 | 100% |
-| `AuthController.java` | 41 | 100% |
-| `CustomUserDetailsService.java` | 33 | 100% |
-| `PingController.java` | 22 | 100% |
-| `V5__adequacao_lgpd.sql` | 22 | 100% |
-| `SpaController.java` | 18 | 100% |
-| `V4__criar_tabela_notificacao.sql` | 13 | 100% |
-| `HomeController.java` | 6 | 100% |
-| `V3__adicionar_tipo_e_pix_despesa.sql` | 3 | 100% |
+| Arquivo | Total linhas | @Ramonzin-dev | Ramon Alves Da Silva (@GimiliOgrande) |
+|---------|-------------|---------|---------|
+| `UsuarioServiceTest.java` | 369 | 100% | 0% |
+| `DespesaService.java` | 293 | 100% | 0% |
+| `UsuarioService.java` | 258 | 100% | 0% |
+| `DespesaServiceTest.java` | 247 | 100% | 0% |
+| `layout.html` | 240 | 100% | 0% |
+| `republica_fragments.html` | 237 | 100% | 0% |
+| `casa_detalhes.html` | 229 | 100% | 0% |
+| `DespesaController.java` | 219 | 100% | 0% |
+| `TarefaServiceTest.java` | 208 | 100% | 0% |
+| `UploadStorageServiceTest.java` | 197 | 100% | 0% |
+| `AuditoriaServiceTest.java` | 168 | 100% | 0% |
+| `NotificacaoServiceTest.java` | 162 | 100% | 0% |
+| `CasaServiceTest.java` | 154 | 100% | 0% |
+| `CasaController.java` | 148 | 100% | 0% |
+| `TarefaService.java` | 146 | 100% | 0% |
+| `cadastro.html` | 135 | 100% | 0% |
+| `login.html` | 130 | 100% | 0% |
+| `dashboard.html` | 122 | 100% | 0% |
+| `NotificacaoService.java` | 103 | 100% | 0% |
+| `CasaService.java` | 95 | 100% | 0% |
+| `NotificacaoController.java` | 94 | 100% | 0% |
+| `UploadStorageService.java` | 87 | 100% | 0% |
+| `AuditoriaService.java` | 86 | 100% | 0% |
+| `TarefaController.java` | 86 | 100% | 0% |
+| `V2__criar_tabelas_sistema_republica.sql` | 84 | 100% | 0% |
+| `api.ts` | 82 | 100% | 0% |
+| `DashboardController.java` | 56 | 100% | 0% |
+| `LgpdController.java` | 53 | 100% | 0% |
+| `RepublicaApplicationTests.java` | 52 | 100% | 0% |
+| `CadastroController.java` | 45 | 100% | 0% |
+| `PingControllerTest.java` | 45 | 100% | 0% |
+| `RepublicaApplication.java` | 42 | 100% | 0% |
+| `AuthController.java` | 41 | 100% | 0% |
+| `CustomUserDetailsService.java` | 33 | 100% | 0% |
+| `PingController.java` | 22 | 100% | 0% |
+| `V5__adequacao_lgpd.sql` | 22 | 100% | 0% |
+| `SpaController.java` | 18 | 100% | 0% |
+| `V4__criar_tabela_notificacao.sql` | 13 | 100% | 0% |
+| `HomeController.java` | 6 | 100% | 0% |
+| `V3__adicionar_tipo_e_pix_despesa.sql` | 3 | 100% | 0% |
 
 ---
 
