@@ -44,3 +44,7 @@ management:
 
 server:
   forward-headers-strategy: native
+
+app:
+  url: ${APP_URL:https://eq17.dsc.rodrigor.com}
+
