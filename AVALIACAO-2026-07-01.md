@@ -16,8 +16,7 @@
 
 ## 2. Integração com Serviço Externo
 
-- ✅ **Google OAuth2** — declarado no README e comprovado no código (3 ocorrência(s)).
-  - Evidência: `src/main/java/br/ufpb/dsc/republica/config/SecurityConfig.java:84:                .oauth2Login(oauth2 -> oauth2`
+- ❌ **Nenhum serviço externo declarado** na seção de integração do README.
 
 ---
 
