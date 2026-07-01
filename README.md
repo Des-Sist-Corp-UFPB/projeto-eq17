@@ -5,6 +5,8 @@ Projeto base (boilerplate) para a disciplina **Desenvolvimento de Sistemas Corpo
 **Professor**: Rodrigo Rebouças | **UFPB — Campus IV**
 
 ---
+**Nome:** Ramon Alves da Silva
+**Github:** GimiliOgrande
 
 ## Tecnologias
 
@@ -341,3 +343,66 @@ base_projeto/
 5. **Nunca editar** migrations já aplicadas — sempre criar uma nova (`V3__`, `V4__`, ...)
 
 > Dúvidas? Consulte a documentação em `docs/` ou o professor.
+
+---
+
+## Cobertura de Testes
+
+A cobertura de testes automatizados do projeto atende à meta mínima exigida de 85%.
+
+- **Percentual Total Obtido no Backend (Java):** **94.29%** (462 de 490 linhas cobertas).
+- **Percentual Total Obtido no Frontend (React):** **100%** (dos arquivos cobertos por testes unitários).
+- **Caminho dos Relatórios de Cobertura no Repositório:**
+  - Relatório Backend: [cobertura/backend/index.html](cobertura/backend/index.html) (abra localmente no seu navegador a partir do arquivo [cobertura/backend/index.html](cobertura/backend/index.html)).
+  - Relatório Frontend: [cobertura/frontend/index.html](cobertura/frontend/index.html) (abra localmente no seu navegador a partir do arquivo [cobertura/frontend/index.html](cobertura/frontend/index.html)).
+
+---
+
+## Log de Auditoria
+
+O sistema de auditoria foi implementado para monitorar e registrar ações críticas executadas pelos usuários nas entidades do sistema.
+
+- **O que é auditado (Ações do Usuário):**
+  - Autenticação: Login bem-sucedido (`LOGIN`) e falhas de login (`LOGIN_FALHA`).
+  - República/Casa: Criação de república (`CRIACAO_CASA`), alteração e remoção.
+  - Morador: Adição e exclusão de moradores das repúblicas.
+  - Tarefa: Criação, alteração de status e exclusão de tarefas de moradores.
+  - Despesa: Criação, alteração, exclusão e registro de pagamento de despesas.
+- **Onde fica armazenado:**
+  - Armazenado na tabela `auditoria` no banco de dados PostgreSQL.
+  - Principais campos: `id`, `usuario_id` (usuário que realizou a ação), `acao` (tipo do evento), `descricao` (detalhamento legível por humanos da alteração), `ip` (endereço IP de onde partiu a requisição), `entidade_afetada` (tabela/classe modificada), `entidade_id` (chave primária da entidade afetada) e `data_hora` (timestamp do evento).
+- **Como foi implementado:**
+  - **Intercepção de Login:** Implementado através do event listener [AuthenticationEventListener](file:///src/main/java/br/ufpb/dsc/republica/config/AuthenticationEventListener.java) que captura eventos disparados pelo Spring Security (`AuthenticationSuccessEvent` e `AbstractAuthenticationFailureEvent`).
+  - **Ações de Negócio:** Centralizado no [AuditoriaService](file:///src/main/java/br/ufpb/dsc/republica/service/AuditoriaService.java) e injetado diretamente nos serviços correspondentes (`CasaService`, `DespesaService`, `TarefaService`, etc.) dentro de métodos de alteração sob transações.
+- **Classes e arquivos participantes:**
+  - Entidade JPA: [Auditoria.java](file:///src/main/java/br/ufpb/dsc/republica/domain/Auditoria.java)
+  - Repositório Spring Data: [AuditoriaRepository.java](file:///src/main/java/br/ufpb/dsc/republica/repository/AuditoriaRepository.java)
+  - Serviço de Auditoria: [AuditoriaService.java](file:///src/main/java/br/ufpb/dsc/republica/service/AuditoriaService.java)
+  - Event Listener: [AuthenticationEventListener.java](file:///src/main/java/br/ufpb/dsc/republica/config/AuthenticationEventListener.java)
+
+---
+
+## Integração com Serviço Externo
+
+O projeto se integra a dois serviços externos principais:
+
+### 1. Google OAuth2 (Google Identity Platform)
+- **Para que é usado:** Permitir que os usuários realizem cadastro e login na aplicação utilizando suas contas do Google de forma simplificada.
+- **Como é configurado:**
+  - Configurado no arquivo [application.yml](file:///src/main/resources/application.yml) sob as propriedades de `spring.security.oauth2.client`.
+  - As chaves de acesso são parametrizadas pelas variáveis de ambiente `${GOOGLE_CLIENT_ID}` e `${GOOGLE_CLIENT_SECRET}` no arquivo `.env` (em ambiente de desenvolvimento, utiliza valores dummy padrão para não impedir a inicialização).
+- **Classes e arquivos participantes:**
+  - Configuração de Segurança: [SecurityConfig.java](file:///src/main/java/br/ufpb/dsc/republica/config/SecurityConfig.java) (habilita o oauth2Login)
+  - Manipulador de Sucesso: [CustomOAuth2SuccessHandler.java](file:///src/main/java/br/ufpb/dsc/republica/config/CustomOAuth2SuccessHandler.java) (intercepta a autenticação com sucesso, extrai e-mail e nome e redireciona o usuário para o dashboard)
+  - Cadastro de Usuário: [UsuarioService.java](file:///src/main/java/br/ufpb/dsc/republica/service/UsuarioService.java) (através do método `registrarOuObterUsuarioOAuth2` cria o usuário local com base nos dados externos)
+
+### 2. Gmail SMTP (Email Delivery Service)
+- **Para que é usado:** Enviar e-mails transacionais de confirmação de cadastro de conta para novos usuários registrados no sistema.
+- **Como é configurado:**
+  - Configurado no arquivo [application.yml](file:///src/main/resources/application.yml) sob as propriedades de `spring.mail`.
+  - O e-mail de envio (`spring.mail.username`) e a senha de app do Gmail (`spring.mail.password`) são parametrizados no arquivo `.env` via variáveis de ambiente `${SPRING_MAIL_USERNAME}` e `${SPRING_MAIL_PASSWORD}`.
+- **Classes e arquivos participantes:**
+  - Serviço de E-mail: [EmailService.java](file:///src/main/java/br/ufpb/dsc/republica/service/EmailService.java) (realiza o envio de e-mails em HTML via protocolo SMTP usando a classe `JavaMailSender`)
+  - Registro de Usuário: [UsuarioService.java](file:///src/main/java/br/ufpb/dsc/republica/service/UsuarioService.java) (gera o token UUID, salva com `emailConfirmado = false` e aciona o `EmailService`)
+  - Controller de Confirmação: [EmailConfirmacaoController.java](file:///src/main/java/br/ufpb/dsc/republica/controller/EmailConfirmacaoController.java) (provê o endpoint GET `/api/auth/confirmar-email?token=...` que valida o token e ativa o cadastro)
+  - Bloqueio de Login: [CustomUserDetailsService.java](file:///src/main/java/br/ufpb/dsc/republica/config/CustomUserDetailsService.java) (barra o login lançando `DisabledException` caso o e-mail não tenha sido verificado via token)

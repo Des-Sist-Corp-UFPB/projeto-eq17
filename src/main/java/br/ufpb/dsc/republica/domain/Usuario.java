@@ -42,6 +42,12 @@ public class Usuario {
     @Column(name = "versao_termo_lgpd", length = 50)
     private String versaoTermoLgpd;
 
+    @Column(name = "email_confirmado", nullable = false)
+    private Boolean emailConfirmado = false;
+
+    @Column(name = "token_confirmacao", length = 100)
+    private String tokenConfirmacao;
+
     @PrePersist
     protected void prePersist() {
         this.criadoEm = Instant.now();
@@ -118,6 +124,22 @@ public class Usuario {
 
     public void setVersaoTermoLgpd(String versaoTermoLgpd) {
         this.versaoTermoLgpd = versaoTermoLgpd;
+    }
+
+    public Boolean getEmailConfirmado() {
+        return emailConfirmado;
+    }
+
+    public void setEmailConfirmado(Boolean emailConfirmado) {
+        this.emailConfirmado = emailConfirmado;
+    }
+
+    public String getTokenConfirmacao() {
+        return tokenConfirmacao;
+    }
+
+    public void setTokenConfirmacao(String tokenConfirmacao) {
+        this.tokenConfirmacao = tokenConfirmacao;
     }
 
     @Override

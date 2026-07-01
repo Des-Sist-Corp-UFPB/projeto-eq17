@@ -55,7 +55,7 @@ public class SecurityConfig {
                         // Outros endpoints do Actuator exigem autenticação
                         .requestMatchers("/actuator/**").authenticated()
                         // Endpoints públicos da API de Autenticação
-                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/confirmar-email").permitAll()
                         // Outros endpoints da API exigem autenticação
                         .requestMatchers("/api/**").authenticated()
                         // Qualquer outra requisição (páginas da SPA, CSS, JS, etc.) é pública

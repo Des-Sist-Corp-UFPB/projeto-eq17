@@ -27,19 +27,22 @@ public class UsuarioService {
     private final TarefaRepository tarefaRepository;
     private final DespesaRateioRepository despesaRateioRepository;
     private final AuditoriaService auditoriaService;
+    private final EmailService emailService;
 
     public UsuarioService(UsuarioRepository usuarioRepository,
                           PasswordEncoder passwordEncoder,
                           MoradorRepository moradorRepository,
                           TarefaRepository tarefaRepository,
                           DespesaRateioRepository despesaRateioRepository,
-                          AuditoriaService auditoriaService) {
+                          AuditoriaService auditoriaService,
+                          EmailService emailService) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.moradorRepository = moradorRepository;
         this.tarefaRepository = tarefaRepository;
         this.despesaRateioRepository = despesaRateioRepository;
         this.auditoriaService = auditoriaService;
+        this.emailService = emailService;
     }
 
     @Transactional(readOnly = true)
@@ -70,10 +73,18 @@ public class UsuarioService {
         novoUsuario.setDataAceiteLgpd(Instant.now());
         novoUsuario.setVersaoTermoLgpd(form.versaoTermoLgpd() != null ? form.versaoTermoLgpd() : "1.0");
 
+        // Geração do token de confirmação de e-mail
+        String token = UUID.randomUUID().toString();
+        novoUsuario.setTokenConfirmacao(token);
+        novoUsuario.setEmailConfirmado(false);
+
         Usuario usuarioSalvo = usuarioRepository.save(novoUsuario);
 
         // Registra o cadastro na Auditoria
         auditoriaService.registrar(usuarioSalvo, "CADASTRO", "Usuário cadastrado com sucesso aceitando os termos da LGPD na versão " + usuarioSalvo.getVersaoTermoLgpd(), "Usuario", usuarioSalvo.getId());
+
+        // Envia o e-mail de confirmação usando o Resend
+        emailService.enviarEmailConfirmacao(usuarioSalvo, token);
 
         return usuarioSalvo;
     }
@@ -97,6 +108,10 @@ public class UsuarioService {
         novoUsuario.setAceitouTermosLgpd(true);
         novoUsuario.setDataAceiteLgpd(Instant.now());
         novoUsuario.setVersaoTermoLgpd("1.0 (Google OAuth2)");
+
+        // Logins via OAuth2 já são implicitamente com e-mail confirmado
+        novoUsuario.setEmailConfirmado(true);
+        novoUsuario.setTokenConfirmacao(null);
 
         Usuario usuarioSalvo = usuarioRepository.save(novoUsuario);
 
@@ -254,5 +269,20 @@ public class UsuarioService {
         auditoriaService.registrar(usuario, "EXPORTACAO_DADOS", "Dados cadastrais e histórico completo exportados pelo usuário.", "Usuario", usuarioId);
 
         return new LgpdExportDto(cadastral, casas, despesas, pagamentos, tarefas, auditorias);
+    }
+
+    @Transactional
+    public Usuario confirmarEmail(String token) {
+        Usuario usuario = usuarioRepository.findByTokenConfirmacao(token)
+                .orElseThrow(() -> new IllegalArgumentException("Token de confirmação inválido ou não encontrado."));
+
+        usuario.setEmailConfirmado(true);
+        usuario.setTokenConfirmacao(null);
+        Usuario usuarioSalvo = usuarioRepository.save(usuario);
+
+        // Registra o evento de confirmação na Auditoria
+        auditoriaService.registrar(usuarioSalvo, "CONFIRMACAO_EMAIL", "E-mail de cadastro verificado com sucesso via token.", "Usuario", usuarioSalvo.getId());
+
+        return usuarioSalvo;
     }
 }

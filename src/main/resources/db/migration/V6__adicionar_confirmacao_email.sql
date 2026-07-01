@@ -1,0 +1,2 @@
+ALTER TABLE usuario ADD COLUMN email_confirmado BOOLEAN DEFAULT FALSE NOT NULL;
+ALTER TABLE usuario ADD COLUMN token_confirmacao VARCHAR(100);

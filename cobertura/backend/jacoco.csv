@@ -1,0 +1,9 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+republicas,br.ufpb.dsc.republica.service,UploadStorageService,21,150,4,26,6,34,4,14,0,3
+republicas,br.ufpb.dsc.republica.service,TarefaService,26,334,1,15,1,60,5,14,4,7
+republicas,br.ufpb.dsc.republica.service,DespesaService,95,627,17,27,13,134,21,20,7,12
+republicas,br.ufpb.dsc.republica.service,CasaService,16,175,1,1,1,32,3,9,2,9
+republicas,br.ufpb.dsc.republica.service,EmailService,85,10,4,0,19,4,3,2,1,2
+republicas,br.ufpb.dsc.republica.service,AuditoriaService,23,86,9,5,7,22,6,8,0,7
+republicas,br.ufpb.dsc.republica.service,UsuarioService,44,625,4,28,7,152,6,24,2,12
+republicas,br.ufpb.dsc.republica.service,NotificacaoService,12,156,4,8,0,35,4,11,1,8
