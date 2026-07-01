@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TarefaService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">republicas</a> &gt; <a href="index.source.html" class="el_package">br.ufpb.dsc.republica.service</a> &gt; <span class="el_source">TarefaService.java</span></div><h1>TarefaService.java</h1><pre class="source lang-java linenums">package br.ufpb.dsc.republica.service;
+
+import br.ufpb.dsc.republica.domain.Casa;
+import br.ufpb.dsc.republica.domain.Morador;
+import br.ufpb.dsc.republica.domain.StatusTarefa;
+import br.ufpb.dsc.republica.domain.Tarefa;
+import br.ufpb.dsc.republica.dto.TarefaForm;
+import br.ufpb.dsc.republica.repository.CasaRepository;
+import br.ufpb.dsc.republica.repository.MoradorRepository;
+import br.ufpb.dsc.republica.repository.TarefaRepository;
+import br.ufpb.dsc.republica.domain.TipoNotificacao;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@Transactional
+public class TarefaService {
+
+    private final TarefaRepository tarefaRepository;
+    private final CasaRepository casaRepository;
+    private final MoradorRepository moradorRepository;
+    private final NotificacaoService notificacaoService;
+    private final AuditoriaService auditoriaService;
+
+    public TarefaService(TarefaRepository tarefaRepository,
+                         CasaRepository casaRepository, 
+                         MoradorRepository moradorRepository,
+                         NotificacaoService notificacaoService,
+<span class="fc" id="L31">                         AuditoriaService auditoriaService) {</span>
+<span class="fc" id="L32">        this.tarefaRepository = tarefaRepository;</span>
+<span class="fc" id="L33">        this.casaRepository = casaRepository;</span>
+<span class="fc" id="L34">        this.moradorRepository = moradorRepository;</span>
+<span class="fc" id="L35">        this.notificacaoService = notificacaoService;</span>
+<span class="fc" id="L36">        this.auditoriaService = auditoriaService;</span>
+<span class="fc" id="L37">    }</span>
+
+    @Transactional(readOnly = true)
+    public List&lt;Tarefa&gt; buscarTarefasPorCasa(Long casaId) {
+<span class="fc" id="L41">        return tarefaRepository.findByCasaIdOrderByCriadoEmDesc(casaId);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Tarefa buscarPorId(Long id) {
+<span class="fc" id="L46">        return tarefaRepository.findById(id)</span>
+<span class="pc" id="L47">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Tarefa não encontrada com o ID: &quot; + id));</span>
+    }
+
+    public Tarefa criarTarefa(Long casaId, TarefaForm form) {
+<span class="fc" id="L51">        Casa casa = casaRepository.findById(casaId)</span>
+<span class="pc" id="L52">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Casa não encontrada.&quot;));</span>
+
+<span class="fc" id="L54">        Tarefa tarefa = new Tarefa(casa, form.descricao(), StatusTarefa.PENDENTE);</span>
+
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (form.responsavelId() != null) {</span>
+<span class="fc" id="L57">            Morador responsavel = moradorRepository.findById(form.responsavelId())</span>
+<span class="pc" id="L58">                    .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Morador responsável não encontrado.&quot;));</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">            if (!responsavel.getCasa().getId().equals(casaId)) {</span>
+<span class="nc" id="L60">                throw new IllegalArgumentException(&quot;O responsável deve morar na mesma casa da tarefa.&quot;);</span>
+            }
+<span class="fc" id="L62">            tarefa.setResponsavel(responsavel);</span>
+            
+            // Notificar o morador responsável
+<span class="fc" id="L65">            notificacaoService.criarNotificacao(</span>
+<span class="fc" id="L66">                responsavel.getUsuario(),</span>
+                &quot;Nova tarefa atribuída a você&quot;,
+<span class="fc" id="L68">                &quot;Você foi designado como responsável pela tarefa: '&quot; + tarefa.getDescricao() + &quot;'.&quot;,</span>
+                TipoNotificacao.TAREFA_ATRIBUIDA
+            );
+        }
+
+<span class="fc" id="L73">        Tarefa tarefaSalva = tarefaRepository.save(tarefa);</span>
+
+        // Auditoria: Criação de tarefa
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        String responsavelNome = tarefaSalva.getResponsavel() != null ? tarefaSalva.getResponsavel().getUsuario().getNome() : &quot;Sem responsável&quot;;</span>
+<span class="fc" id="L77">        auditoriaService.registrarAcaoUsuarioLogado(&quot;CRIACAO_TAREFA&quot;, </span>
+<span class="fc" id="L78">                String.format(&quot;Criou a tarefa '%s' na casa '%s' atribuída a '%s'.&quot;, tarefaSalva.getDescricao(), casa.getNome(), responsavelNome), </span>
+<span class="fc" id="L79">                &quot;Tarefa&quot;, tarefaSalva.getId());</span>
+
+<span class="fc" id="L81">        return tarefaSalva;</span>
+    }
+
+    public Tarefa alterarStatus(Long tarefaId, StatusTarefa status) {
+<span class="fc" id="L85">        Tarefa tarefa = buscarPorId(tarefaId);</span>
+<span class="fc" id="L86">        StatusTarefa statusAntigo = tarefa.getStatus();</span>
+<span class="fc" id="L87">        tarefa.setStatus(status);</span>
+<span class="fc" id="L88">        Tarefa tarefaSalva = tarefaRepository.save(tarefa);</span>
+
+        // Auditoria: Conclusão ou Alteração
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        String acao = status == StatusTarefa.CONCLUIDA ? &quot;CONCLUSAO_TAREFA&quot; : &quot;ALTERACAO_TAREFA&quot;;</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        String descricao = status == StatusTarefa.CONCLUIDA ? </span>
+<span class="fc" id="L93">                String.format(&quot;Concluiu a tarefa '%s' na casa '%s'.&quot;, tarefaSalva.getDescricao(), tarefaSalva.getCasa().getNome()) :</span>
+<span class="fc" id="L94">                String.format(&quot;Alterou o status da tarefa '%s' de '%s' para '%s'.&quot;, tarefaSalva.getDescricao(), statusAntigo.name(), status.name());</span>
+
+<span class="fc" id="L96">        auditoriaService.registrarAcaoUsuarioLogado(acao, descricao, &quot;Tarefa&quot;, tarefaId);</span>
+
+<span class="fc" id="L98">        return tarefaSalva;</span>
+    }
+
+    public Tarefa delegarTarefa(Long tarefaId, Long moradorId) {
+<span class="fc" id="L102">        Tarefa tarefa = buscarPorId(tarefaId);</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        String responsavelAntigo = tarefa.getResponsavel() != null ? tarefa.getResponsavel().getUsuario().getNome() : &quot;Ninguém&quot;;</span>
+        
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (moradorId == null) {</span>
+<span class="fc" id="L106">            tarefa.setResponsavel(null);</span>
+            
+            // Auditoria: Desatribuição da tarefa
+<span class="fc" id="L109">            auditoriaService.registrarAcaoUsuarioLogado(&quot;ALTERACAO_TAREFA&quot;, </span>
+<span class="fc" id="L110">                    String.format(&quot;Removeu a responsabilidade da tarefa '%s' (responsável anterior: %s).&quot;, tarefa.getDescricao(), responsavelAntigo), </span>
+                    &quot;Tarefa&quot;, tarefaId);
+        } else {
+<span class="fc" id="L113">            Morador morador = moradorRepository.findById(moradorId)</span>
+<span class="pc" id="L114">                    .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Morador não encontrado.&quot;));</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">            if (!morador.getCasa().getId().equals(tarefa.getCasa().getId())) {</span>
+<span class="fc" id="L116">                throw new IllegalArgumentException(&quot;O responsável deve morar na mesma casa da tarefa.&quot;);</span>
+            }
+<span class="fc" id="L118">            tarefa.setResponsavel(morador);</span>
+            
+            // Notificar o morador responsável
+<span class="fc" id="L121">            notificacaoService.criarNotificacao(</span>
+<span class="fc" id="L122">                morador.getUsuario(),</span>
+                &quot;Tarefa atribuída a você&quot;,
+<span class="fc" id="L124">                &quot;Você foi designado como responsável pela tarefa: '&quot; + tarefa.getDescricao() + &quot;'.&quot;,</span>
+                TipoNotificacao.TAREFA_ATRIBUIDA
+            );
+
+            // Auditoria: Redelegação da tarefa
+<span class="fc" id="L129">            auditoriaService.registrarAcaoUsuarioLogado(&quot;ALTERACAO_TAREFA&quot;, </span>
+<span class="fc" id="L130">                    String.format(&quot;Delegou a responsabilidade da tarefa '%s' para '%s' (responsável anterior: %s).&quot;, </span>
+<span class="fc" id="L131">                            tarefa.getDescricao(), morador.getUsuario().getNome(), responsavelAntigo), </span>
+                    &quot;Tarefa&quot;, tarefaId);
+        }
+<span class="fc" id="L134">        return tarefaRepository.save(tarefa);</span>
+    }
+
+    public void excluirTarefa(Long tarefaId) {
+<span class="fc" id="L138">        Tarefa tarefa = buscarPorId(tarefaId);</span>
+<span class="fc" id="L139">        tarefaRepository.delete(tarefa);</span>
+
+        // Auditoria: Exclusão de tarefa
+<span class="fc" id="L142">        auditoriaService.registrarAcaoUsuarioLogado(&quot;EXCLUSAO_TAREFA&quot;, </span>
+<span class="fc" id="L143">                String.format(&quot;Excluiu permanentemente a tarefa '%s' na casa '%s'.&quot;, tarefa.getDescricao(), tarefa.getCasa().getNome()), </span>
+                &quot;Tarefa&quot;, tarefaId);
+<span class="fc" id="L145">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
