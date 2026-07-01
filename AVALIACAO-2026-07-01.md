@@ -10,19 +10,22 @@
 
 ## 1. Log de Auditoria
 
-⚠️ **Parcial** — há 149 evidência(s) no código, mas **falta documentar** a seção de auditoria no README.
+✅ **Atendido** — documentado no README e com 149 evidência(s) no código.
 
 ---
 
 ## 2. Integração com Serviço Externo
 
-- ❌ **Nenhum serviço externo declarado** na seção de integração do README.
+- ✅ **Google OAuth2** — declarado no README e comprovado no código (3 ocorrência(s)).
+  - Evidência: `src/main/java/br/ufpb/dsc/republica/config/SecurityConfig.java:84:                .oauth2Login(oauth2 -> oauth2`
 
 ---
 
 ## 3. Cobertura de Testes (≥ 85%)
 
-❌ **Não comprovado** — o README menciona cobertura, mas **nenhum relatório foi commitado** na pasta `cobertura/`.
+✅ **Atendido** — backend linhas 94.3% (instruções 91.4% · ramos 73.3%) [JaCoCo]; frontend linhas 100% (JS) (relatório em `cobertura/`, 50 arquivo(s)).
+
+> Critério: **cobertura de linhas** ≥ 85% (conforme a orientação). As demais métricas (instruções/ramos) são informativas.
 
 > Observação: a cobertura é lida do relatório commitado pela equipe; não é recalculada nesta avaliação.
 
