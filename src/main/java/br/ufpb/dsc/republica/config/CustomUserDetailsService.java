@@ -24,6 +24,10 @@ public class CustomUserDetailsService implements UserDetailsService {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com o e-mail: " + email));
 
+        if (usuario.getEmailConfirmado() != null && !usuario.getEmailConfirmado()) {
+            throw new org.springframework.security.authentication.DisabledException("O e-mail deste usuário ainda não foi verificado. Verifique sua caixa de entrada.");
+        }
+
         return new User(
                 usuario.getEmail(),
                 usuario.getSenha(),

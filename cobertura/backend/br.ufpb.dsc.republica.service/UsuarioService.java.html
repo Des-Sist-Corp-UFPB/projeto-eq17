@@ -27,233 +27,263 @@ public class UsuarioService {
     private final TarefaRepository tarefaRepository;
     private final DespesaRateioRepository despesaRateioRepository;
     private final AuditoriaService auditoriaService;
+    private final EmailService emailService;
 
     public UsuarioService(UsuarioRepository usuarioRepository,
                           PasswordEncoder passwordEncoder,
                           MoradorRepository moradorRepository,
                           TarefaRepository tarefaRepository,
                           DespesaRateioRepository despesaRateioRepository,
-<span class="fc" id="L36">                          AuditoriaService auditoriaService) {</span>
-<span class="fc" id="L37">        this.usuarioRepository = usuarioRepository;</span>
-<span class="fc" id="L38">        this.passwordEncoder = passwordEncoder;</span>
-<span class="fc" id="L39">        this.moradorRepository = moradorRepository;</span>
-<span class="fc" id="L40">        this.tarefaRepository = tarefaRepository;</span>
-<span class="fc" id="L41">        this.despesaRateioRepository = despesaRateioRepository;</span>
-<span class="fc" id="L42">        this.auditoriaService = auditoriaService;</span>
-<span class="fc" id="L43">    }</span>
+                          AuditoriaService auditoriaService,
+<span class="fc" id="L38">                          EmailService emailService) {</span>
+<span class="fc" id="L39">        this.usuarioRepository = usuarioRepository;</span>
+<span class="fc" id="L40">        this.passwordEncoder = passwordEncoder;</span>
+<span class="fc" id="L41">        this.moradorRepository = moradorRepository;</span>
+<span class="fc" id="L42">        this.tarefaRepository = tarefaRepository;</span>
+<span class="fc" id="L43">        this.despesaRateioRepository = despesaRateioRepository;</span>
+<span class="fc" id="L44">        this.auditoriaService = auditoriaService;</span>
+<span class="fc" id="L45">        this.emailService = emailService;</span>
+<span class="fc" id="L46">    }</span>
 
     @Transactional(readOnly = true)
     public Optional&lt;Usuario&gt; buscarPorEmail(String email) {
-<span class="fc" id="L47">        return usuarioRepository.findByEmail(email);</span>
+<span class="fc" id="L50">        return usuarioRepository.findByEmail(email);</span>
     }
 
     @Transactional(readOnly = true)
     public Optional&lt;Usuario&gt; buscarPorId(Long id) {
-<span class="fc" id="L52">        return usuarioRepository.findById(id);</span>
+<span class="fc" id="L55">        return usuarioRepository.findById(id);</span>
     }
 
     public Usuario cadastrar(UsuarioForm form) {
-<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (usuarioRepository.existsByEmail(form.email())) {</span>
-<span class="fc" id="L57">            throw new IllegalArgumentException(&quot;Já existe um usuário cadastrado com este e-mail.&quot;);</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (usuarioRepository.existsByEmail(form.email())) {</span>
+<span class="fc" id="L60">            throw new IllegalArgumentException(&quot;Já existe um usuário cadastrado com este e-mail.&quot;);</span>
         }
 
         // Validação de consentimento de uso dos dados para LGPD
-<span class="pc bpc" id="L61" title="1 of 4 branches missed.">        if (form.aceitouTermosLgpd() == null || !form.aceitouTermosLgpd()) {</span>
-<span class="fc" id="L62">            throw new IllegalArgumentException(&quot;É obrigatório aceitar a Política de Privacidade e os Termos de Uso do sistema.&quot;);</span>
+<span class="pc bpc" id="L64" title="1 of 4 branches missed.">        if (form.aceitouTermosLgpd() == null || !form.aceitouTermosLgpd()) {</span>
+<span class="fc" id="L65">            throw new IllegalArgumentException(&quot;É obrigatório aceitar a Política de Privacidade e os Termos de Uso do sistema.&quot;);</span>
         }
 
-<span class="fc" id="L65">        String senhaCriptografada = passwordEncoder.encode(form.senha());</span>
-<span class="fc" id="L66">        Usuario novoUsuario = new Usuario(form.nome(), form.email(), senhaCriptografada);</span>
+<span class="fc" id="L68">        String senhaCriptografada = passwordEncoder.encode(form.senha());</span>
+<span class="fc" id="L69">        Usuario novoUsuario = new Usuario(form.nome(), form.email(), senhaCriptografada);</span>
         
         // Atribui os campos de consentimento
-<span class="fc" id="L69">        novoUsuario.setAceitouTermosLgpd(true);</span>
-<span class="fc" id="L70">        novoUsuario.setDataAceiteLgpd(Instant.now());</span>
-<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        novoUsuario.setVersaoTermoLgpd(form.versaoTermoLgpd() != null ? form.versaoTermoLgpd() : &quot;1.0&quot;);</span>
+<span class="fc" id="L72">        novoUsuario.setAceitouTermosLgpd(true);</span>
+<span class="fc" id="L73">        novoUsuario.setDataAceiteLgpd(Instant.now());</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        novoUsuario.setVersaoTermoLgpd(form.versaoTermoLgpd() != null ? form.versaoTermoLgpd() : &quot;1.0&quot;);</span>
 
-<span class="fc" id="L73">        Usuario usuarioSalvo = usuarioRepository.save(novoUsuario);</span>
+        // Geração do token de confirmação de e-mail
+<span class="fc" id="L77">        String token = UUID.randomUUID().toString();</span>
+<span class="fc" id="L78">        novoUsuario.setTokenConfirmacao(token);</span>
+<span class="fc" id="L79">        novoUsuario.setEmailConfirmado(false);</span>
+
+<span class="fc" id="L81">        Usuario usuarioSalvo = usuarioRepository.save(novoUsuario);</span>
 
         // Registra o cadastro na Auditoria
-<span class="fc" id="L76">        auditoriaService.registrar(usuarioSalvo, &quot;CADASTRO&quot;, &quot;Usuário cadastrado com sucesso aceitando os termos da LGPD na versão &quot; + usuarioSalvo.getVersaoTermoLgpd(), &quot;Usuario&quot;, usuarioSalvo.getId());</span>
+<span class="fc" id="L84">        auditoriaService.registrar(usuarioSalvo, &quot;CADASTRO&quot;, &quot;Usuário cadastrado com sucesso aceitando os termos da LGPD na versão &quot; + usuarioSalvo.getVersaoTermoLgpd(), &quot;Usuario&quot;, usuarioSalvo.getId());</span>
 
-<span class="fc" id="L78">        return usuarioSalvo;</span>
+        // Envia o e-mail de confirmação usando o Resend
+<span class="fc" id="L87">        emailService.enviarEmailConfirmacao(usuarioSalvo, token);</span>
+
+<span class="fc" id="L89">        return usuarioSalvo;</span>
     }
 
     @Transactional
     public Usuario registrarOuObterUsuarioOAuth2(String email, String nome) {
-<span class="fc" id="L83">        Optional&lt;Usuario&gt; usuarioOpt = usuarioRepository.findByEmail(email);</span>
-<span class="fc bfc" id="L84" title="All 2 branches covered.">        if (usuarioOpt.isPresent()) {</span>
-<span class="fc" id="L85">            Usuario usuario = usuarioOpt.get();</span>
-<span class="fc" id="L86">            auditoriaService.registrar(usuario, &quot;LOGIN&quot;, &quot;Login realizado com sucesso via Google OAuth2.&quot;, &quot;Usuario&quot;, usuario.getId());</span>
-<span class="fc" id="L87">            return usuario;</span>
+<span class="fc" id="L94">        Optional&lt;Usuario&gt; usuarioOpt = usuarioRepository.findByEmail(email);</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        if (usuarioOpt.isPresent()) {</span>
+<span class="fc" id="L96">            Usuario usuario = usuarioOpt.get();</span>
+<span class="fc" id="L97">            auditoriaService.registrar(usuario, &quot;LOGIN&quot;, &quot;Login realizado com sucesso via Google OAuth2.&quot;, &quot;Usuario&quot;, usuario.getId());</span>
+<span class="fc" id="L98">            return usuario;</span>
         }
 
-<span class="fc" id="L90">        Usuario novoUsuario = new Usuario();</span>
-<span class="fc" id="L91">        novoUsuario.setEmail(email);</span>
-<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        novoUsuario.setNome(nome != null ? nome : email.split(&quot;@&quot;)[0]);</span>
+<span class="fc" id="L101">        Usuario novoUsuario = new Usuario();</span>
+<span class="fc" id="L102">        novoUsuario.setEmail(email);</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">        novoUsuario.setNome(nome != null ? nome : email.split(&quot;@&quot;)[0]);</span>
 
-<span class="fc" id="L94">        String senhaAleatoria = UUID.randomUUID().toString();</span>
-<span class="fc" id="L95">        novoUsuario.setSenha(passwordEncoder.encode(senhaAleatoria));</span>
+<span class="fc" id="L105">        String senhaAleatoria = UUID.randomUUID().toString();</span>
+<span class="fc" id="L106">        novoUsuario.setSenha(passwordEncoder.encode(senhaAleatoria));</span>
 
-<span class="fc" id="L97">        novoUsuario.setAceitouTermosLgpd(true);</span>
-<span class="fc" id="L98">        novoUsuario.setDataAceiteLgpd(Instant.now());</span>
-<span class="fc" id="L99">        novoUsuario.setVersaoTermoLgpd(&quot;1.0 (Google OAuth2)&quot;);</span>
+<span class="fc" id="L108">        novoUsuario.setAceitouTermosLgpd(true);</span>
+<span class="fc" id="L109">        novoUsuario.setDataAceiteLgpd(Instant.now());</span>
+<span class="fc" id="L110">        novoUsuario.setVersaoTermoLgpd(&quot;1.0 (Google OAuth2)&quot;);</span>
 
-<span class="fc" id="L101">        Usuario usuarioSalvo = usuarioRepository.save(novoUsuario);</span>
+        // Logins via OAuth2 já são implicitamente com e-mail confirmado
+<span class="fc" id="L113">        novoUsuario.setEmailConfirmado(true);</span>
+<span class="fc" id="L114">        novoUsuario.setTokenConfirmacao(null);</span>
 
-<span class="fc" id="L103">        auditoriaService.registrar(usuarioSalvo, &quot;CADASTRO&quot;, &quot;Usuário cadastrado automaticamente via Google OAuth2 com termos da LGPD na versão 1.0 (Google OAuth2)&quot;, &quot;Usuario&quot;, usuarioSalvo.getId());</span>
-<span class="fc" id="L104">        auditoriaService.registrar(usuarioSalvo, &quot;LOGIN&quot;, &quot;Login realizado com sucesso via Google OAuth2.&quot;, &quot;Usuario&quot;, usuarioSalvo.getId());</span>
+<span class="fc" id="L116">        Usuario usuarioSalvo = usuarioRepository.save(novoUsuario);</span>
 
-<span class="fc" id="L106">        return usuarioSalvo;</span>
+<span class="fc" id="L118">        auditoriaService.registrar(usuarioSalvo, &quot;CADASTRO&quot;, &quot;Usuário cadastrado automaticamente via Google OAuth2 com termos da LGPD na versão 1.0 (Google OAuth2)&quot;, &quot;Usuario&quot;, usuarioSalvo.getId());</span>
+<span class="fc" id="L119">        auditoriaService.registrar(usuarioSalvo, &quot;LOGIN&quot;, &quot;Login realizado com sucesso via Google OAuth2.&quot;, &quot;Usuario&quot;, usuarioSalvo.getId());</span>
+
+<span class="fc" id="L121">        return usuarioSalvo;</span>
     }
 
     @Transactional(readOnly = true)
     public boolean possuiPendenciasFinanceiras(Long usuarioId) {
-<span class="fc" id="L111">        List&lt;Morador&gt; moradores = moradorRepository.findByUsuarioId(usuarioId);</span>
-<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (Morador morador : moradores) {</span>
-<span class="fc" id="L113">            List&lt;DespesaRateio&gt; rateios = despesaRateioRepository.findByMoradorId(morador.getId());</span>
-<span class="fc bfc" id="L114" title="All 2 branches covered.">            for (DespesaRateio rateio : rateios) {</span>
-<span class="fc bfc" id="L115" title="All 2 branches covered.">                if (rateio.getDespesa().getExcluido()) {</span>
-<span class="fc" id="L116">                    continue;</span>
+<span class="fc" id="L126">        List&lt;Morador&gt; moradores = moradorRepository.findByUsuarioId(usuarioId);</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        for (Morador morador : moradores) {</span>
+<span class="fc" id="L128">            List&lt;DespesaRateio&gt; rateios = despesaRateioRepository.findByMoradorId(morador.getId());</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">            for (DespesaRateio rateio : rateios) {</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">                if (rateio.getDespesa().getExcluido()) {</span>
+<span class="fc" id="L131">                    continue;</span>
                 }
-<span class="fc" id="L118">                Pagamento ultimoPagamento = rateio.getUltimoPagamento();</span>
-<span class="pc bpc" id="L119" title="1 of 4 branches missed.">                if (ultimoPagamento == null || ultimoPagamento.getStatus() != StatusPagamento.CONFIRMADO) {</span>
-<span class="fc" id="L120">                    return true;</span>
+<span class="fc" id="L133">                Pagamento ultimoPagamento = rateio.getUltimoPagamento();</span>
+<span class="pc bpc" id="L134" title="1 of 4 branches missed.">                if (ultimoPagamento == null || ultimoPagamento.getStatus() != StatusPagamento.CONFIRMADO) {</span>
+<span class="fc" id="L135">                    return true;</span>
                 }
-<span class="fc" id="L122">            }</span>
-<span class="fc" id="L123">        }</span>
-<span class="fc" id="L124">        return false;</span>
+<span class="fc" id="L137">            }</span>
+<span class="fc" id="L138">        }</span>
+<span class="fc" id="L139">        return false;</span>
     }
 
     public void excluirUsuario(Long usuarioId) {
-<span class="fc" id="L128">        Usuario usuario = usuarioRepository.findById(usuarioId)</span>
-<span class="fc" id="L129">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Usuário não encontrado.&quot;));</span>
+<span class="fc" id="L143">        Usuario usuario = usuarioRepository.findById(usuarioId)</span>
+<span class="fc" id="L144">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Usuário não encontrado.&quot;));</span>
 
-<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (possuiPendenciasFinanceiras(usuarioId)) {</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        if (possuiPendenciasFinanceiras(usuarioId)) {</span>
             // Se possuir despesas pendentes ou responsabilidades financeiras em aberto, executa anonimização
-<span class="fc" id="L133">            String nomeAntigo = usuario.getNome();</span>
-<span class="fc" id="L134">            String emailAntigo = usuario.getEmail();</span>
+<span class="fc" id="L148">            String nomeAntigo = usuario.getNome();</span>
+<span class="fc" id="L149">            String emailAntigo = usuario.getEmail();</span>
 
-<span class="fc" id="L136">            usuario.setNome(&quot;Usuario Removido #&quot; + usuarioId);</span>
-<span class="fc" id="L137">            usuario.setEmail(&quot;removido&quot; + usuarioId + &quot;@sistema.local&quot;);</span>
-<span class="fc" id="L138">            usuario.setSenha(passwordEncoder.encode(UUID.randomUUID().toString())); // Invalida a senha</span>
-<span class="fc" id="L139">            usuario.setAceitouTermosLgpd(false);</span>
-<span class="fc" id="L140">            usuario.setDataAceiteLgpd(null);</span>
-<span class="fc" id="L141">            usuario.setVersaoTermoLgpd(null);</span>
+<span class="fc" id="L151">            usuario.setNome(&quot;Usuario Removido #&quot; + usuarioId);</span>
+<span class="fc" id="L152">            usuario.setEmail(&quot;removido&quot; + usuarioId + &quot;@sistema.local&quot;);</span>
+<span class="fc" id="L153">            usuario.setSenha(passwordEncoder.encode(UUID.randomUUID().toString())); // Invalida a senha</span>
+<span class="fc" id="L154">            usuario.setAceitouTermosLgpd(false);</span>
+<span class="fc" id="L155">            usuario.setDataAceiteLgpd(null);</span>
+<span class="fc" id="L156">            usuario.setVersaoTermoLgpd(null);</span>
 
-<span class="fc" id="L143">            usuarioRepository.save(usuario);</span>
+<span class="fc" id="L158">            usuarioRepository.save(usuario);</span>
 
             // Grava na auditoria
-<span class="fc" id="L146">            auditoriaService.registrar(usuario, &quot;SOLICITACAO_EXCLUSAO&quot;, </span>
-<span class="fc" id="L147">                String.format(&quot;Usuário '%s' (%s) foi anonimizado por solicitação devido a despesas/pagamentos em aberto.&quot;, nomeAntigo, emailAntigo), </span>
+<span class="fc" id="L161">            auditoriaService.registrar(usuario, &quot;SOLICITACAO_EXCLUSAO&quot;, </span>
+<span class="fc" id="L162">                String.format(&quot;Usuário '%s' (%s) foi anonimizado por solicitação devido a despesas/pagamentos em aberto.&quot;, nomeAntigo, emailAntigo), </span>
                 &quot;Usuario&quot;, usuarioId);
-<span class="fc" id="L149">        } else {</span>
+<span class="fc" id="L164">        } else {</span>
             // Caso contrário, realiza a exclusão física do registro
             // Primeiro gera o registro de auditoria órfão de usuário para segurança
-<span class="fc" id="L152">            auditoriaService.registrar(null, &quot;SOLICITACAO_EXCLUSAO&quot;, </span>
-<span class="fc" id="L153">                String.format(&quot;Usuário '%s' (%s) excluído fisicamente de forma permanente do sistema.&quot;, usuario.getNome(), usuario.getEmail()), </span>
+<span class="fc" id="L167">            auditoriaService.registrar(null, &quot;SOLICITACAO_EXCLUSAO&quot;, </span>
+<span class="fc" id="L168">                String.format(&quot;Usuário '%s' (%s) excluído fisicamente de forma permanente do sistema.&quot;, usuario.getNome(), usuario.getEmail()), </span>
                 &quot;Usuario&quot;, usuarioId);
             
-<span class="fc" id="L156">            usuarioRepository.delete(usuario);</span>
+<span class="fc" id="L171">            usuarioRepository.delete(usuario);</span>
         }
-<span class="fc" id="L158">    }</span>
+<span class="fc" id="L173">    }</span>
 
     @Transactional
     public LgpdExportDto exportarDados(Long usuarioId) {
-<span class="fc" id="L162">        Usuario usuario = usuarioRepository.findById(usuarioId)</span>
-<span class="fc" id="L163">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Usuário não encontrado.&quot;));</span>
+<span class="fc" id="L177">        Usuario usuario = usuarioRepository.findById(usuarioId)</span>
+<span class="fc" id="L178">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Usuário não encontrado.&quot;));</span>
 
-<span class="fc" id="L165">        List&lt;Morador&gt; moradores = moradorRepository.findByUsuarioId(usuarioId);</span>
+<span class="fc" id="L180">        List&lt;Morador&gt; moradores = moradorRepository.findByUsuarioId(usuarioId);</span>
 
         // Mapeia Casas das quais o usuário participa
-<span class="fc" id="L168">        List&lt;LgpdExportDto.CasaDados&gt; casas = moradores.stream()</span>
-<span class="fc" id="L169">                .map(m -&gt; new LgpdExportDto.CasaDados(</span>
-<span class="fc" id="L170">                        m.getCasa().getId(),</span>
-<span class="fc" id="L171">                        m.getCasa().getNome(),</span>
-<span class="fc" id="L172">                        m.getCasa().getEndereco(),</span>
-<span class="fc" id="L173">                        m.getPapel().name(),</span>
-<span class="fc" id="L174">                        m.getCasa().getCriadoEm()</span>
-<span class="fc" id="L175">                )).toList();</span>
+<span class="fc" id="L183">        List&lt;LgpdExportDto.CasaDados&gt; casas = moradores.stream()</span>
+<span class="fc" id="L184">                .map(m -&gt; new LgpdExportDto.CasaDados(</span>
+<span class="fc" id="L185">                        m.getCasa().getId(),</span>
+<span class="fc" id="L186">                        m.getCasa().getNome(),</span>
+<span class="fc" id="L187">                        m.getCasa().getEndereco(),</span>
+<span class="fc" id="L188">                        m.getPapel().name(),</span>
+<span class="fc" id="L189">                        m.getCasa().getCriadoEm()</span>
+<span class="fc" id="L190">                )).toList();</span>
 
-<span class="fc" id="L177">        List&lt;LgpdExportDto.DespesaDados&gt; despesas = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L178">        List&lt;LgpdExportDto.PagamentoDados&gt; pagamentos = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L179">        List&lt;LgpdExportDto.TarefaDados&gt; tarefas = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L192">        List&lt;LgpdExportDto.DespesaDados&gt; despesas = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L193">        List&lt;LgpdExportDto.PagamentoDados&gt; pagamentos = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L194">        List&lt;LgpdExportDto.TarefaDados&gt; tarefas = new ArrayList&lt;&gt;();</span>
 
-<span class="fc bfc" id="L181" title="All 2 branches covered.">        for (Morador morador : moradores) {</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">        for (Morador morador : moradores) {</span>
             // Histórico de tarefas atribuídas a este morador
-<span class="fc" id="L183">            List&lt;Tarefa&gt; tarefasMorador = tarefaRepository.findByResponsavelId(morador.getId());</span>
-<span class="fc bfc" id="L184" title="All 2 branches covered.">            for (Tarefa t : tarefasMorador) {</span>
-<span class="fc" id="L185">                tarefas.add(new LgpdExportDto.TarefaDados(</span>
-<span class="fc" id="L186">                        t.getId(),</span>
-<span class="fc" id="L187">                        t.getCasa().getId(),</span>
-<span class="fc" id="L188">                        t.getCasa().getNome(),</span>
-<span class="fc" id="L189">                        t.getDescricao(),</span>
-<span class="fc" id="L190">                        t.getStatus().name(),</span>
-<span class="fc" id="L191">                        t.getCriadoEm(),</span>
-<span class="fc" id="L192">                        t.getAtualizadoEm()</span>
+<span class="fc" id="L198">            List&lt;Tarefa&gt; tarefasMorador = tarefaRepository.findByResponsavelId(morador.getId());</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">            for (Tarefa t : tarefasMorador) {</span>
+<span class="fc" id="L200">                tarefas.add(new LgpdExportDto.TarefaDados(</span>
+<span class="fc" id="L201">                        t.getId(),</span>
+<span class="fc" id="L202">                        t.getCasa().getId(),</span>
+<span class="fc" id="L203">                        t.getCasa().getNome(),</span>
+<span class="fc" id="L204">                        t.getDescricao(),</span>
+<span class="fc" id="L205">                        t.getStatus().name(),</span>
+<span class="fc" id="L206">                        t.getCriadoEm(),</span>
+<span class="fc" id="L207">                        t.getAtualizadoEm()</span>
                 ));
-<span class="fc" id="L194">            }</span>
+<span class="fc" id="L209">            }</span>
 
             // Histórico de despesas e pagamentos deste morador
-<span class="fc" id="L197">            List&lt;DespesaRateio&gt; rateios = despesaRateioRepository.findByMoradorId(morador.getId());</span>
-<span class="fc bfc" id="L198" title="All 2 branches covered.">            for (DespesaRateio rateio : rateios) {</span>
-<span class="fc" id="L199">                Despesa despesa = rateio.getDespesa();</span>
+<span class="fc" id="L212">            List&lt;DespesaRateio&gt; rateios = despesaRateioRepository.findByMoradorId(morador.getId());</span>
+<span class="fc bfc" id="L213" title="All 2 branches covered.">            for (DespesaRateio rateio : rateios) {</span>
+<span class="fc" id="L214">                Despesa despesa = rateio.getDespesa();</span>
                 
-<span class="fc" id="L201">                despesas.add(new LgpdExportDto.DespesaDados(</span>
-<span class="fc" id="L202">                        despesa.getId(),</span>
-<span class="fc" id="L203">                        despesa.getCasa().getId(),</span>
-<span class="fc" id="L204">                        despesa.getCasa().getNome(),</span>
-<span class="fc" id="L205">                        despesa.getDescricao(),</span>
-<span class="fc" id="L206">                        despesa.getValorTotal(),</span>
-<span class="fc" id="L207">                        despesa.getVencimento(),</span>
-<span class="fc" id="L208">                        despesa.getStatus().name(),</span>
-<span class="fc" id="L209">                        despesa.getTipo().name(),</span>
-<span class="fc" id="L210">                        despesa.getChavePix(),</span>
-<span class="fc" id="L211">                        despesa.getCriadoEm()</span>
+<span class="fc" id="L216">                despesas.add(new LgpdExportDto.DespesaDados(</span>
+<span class="fc" id="L217">                        despesa.getId(),</span>
+<span class="fc" id="L218">                        despesa.getCasa().getId(),</span>
+<span class="fc" id="L219">                        despesa.getCasa().getNome(),</span>
+<span class="fc" id="L220">                        despesa.getDescricao(),</span>
+<span class="fc" id="L221">                        despesa.getValorTotal(),</span>
+<span class="fc" id="L222">                        despesa.getVencimento(),</span>
+<span class="fc" id="L223">                        despesa.getStatus().name(),</span>
+<span class="fc" id="L224">                        despesa.getTipo().name(),</span>
+<span class="fc" id="L225">                        despesa.getChavePix(),</span>
+<span class="fc" id="L226">                        despesa.getCriadoEm()</span>
                 ));
 
-<span class="fc bfc" id="L214" title="All 2 branches covered.">                for (Pagamento pag : rateio.getPagamentos()) {</span>
-<span class="fc" id="L215">                    pagamentos.add(new LgpdExportDto.PagamentoDados(</span>
-<span class="fc" id="L216">                            pag.getId(),</span>
-<span class="fc" id="L217">                            rateio.getId(),</span>
-<span class="fc" id="L218">                            despesa.getId(),</span>
-<span class="fc" id="L219">                            despesa.getDescricao(),</span>
-<span class="fc" id="L220">                            rateio.getValorDevido(),</span>
-<span class="fc" id="L221">                            pag.getDataPagamento(),</span>
-<span class="fc" id="L222">                            pag.getComprovante(),</span>
-<span class="fc" id="L223">                            pag.getStatus().name(),</span>
-<span class="fc" id="L224">                            pag.getCriadoEm()</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">                for (Pagamento pag : rateio.getPagamentos()) {</span>
+<span class="fc" id="L230">                    pagamentos.add(new LgpdExportDto.PagamentoDados(</span>
+<span class="fc" id="L231">                            pag.getId(),</span>
+<span class="fc" id="L232">                            rateio.getId(),</span>
+<span class="fc" id="L233">                            despesa.getId(),</span>
+<span class="fc" id="L234">                            despesa.getDescricao(),</span>
+<span class="fc" id="L235">                            rateio.getValorDevido(),</span>
+<span class="fc" id="L236">                            pag.getDataPagamento(),</span>
+<span class="fc" id="L237">                            pag.getComprovante(),</span>
+<span class="fc" id="L238">                            pag.getStatus().name(),</span>
+<span class="fc" id="L239">                            pag.getCriadoEm()</span>
                     ));
-<span class="fc" id="L226">                }</span>
-<span class="fc" id="L227">            }</span>
-<span class="fc" id="L228">        }</span>
+<span class="fc" id="L241">                }</span>
+<span class="fc" id="L242">            }</span>
+<span class="fc" id="L243">        }</span>
 
         // Histórico de auditoria do usuário
-<span class="fc" id="L231">        List&lt;Auditoria&gt; auditoriasLista = auditoriaService.buscarPorUsuario(usuarioId);</span>
-<span class="fc" id="L232">        List&lt;LgpdExportDto.AuditoriaDados&gt; auditorias = auditoriasLista.stream()</span>
-<span class="fc" id="L233">                .map(a -&gt; new LgpdExportDto.AuditoriaDados(</span>
-<span class="fc" id="L234">                        a.getId(),</span>
-<span class="fc" id="L235">                        a.getAcao(),</span>
-<span class="fc" id="L236">                        a.getDescricao(),</span>
-<span class="fc" id="L237">                        a.getDataHora(),</span>
-<span class="fc" id="L238">                        a.getEnderecoIp(),</span>
-<span class="fc" id="L239">                        a.getEntidadeAfetada(),</span>
-<span class="fc" id="L240">                        a.getEntidadeId()</span>
-<span class="fc" id="L241">                )).toList();</span>
+<span class="fc" id="L246">        List&lt;Auditoria&gt; auditoriasLista = auditoriaService.buscarPorUsuario(usuarioId);</span>
+<span class="fc" id="L247">        List&lt;LgpdExportDto.AuditoriaDados&gt; auditorias = auditoriasLista.stream()</span>
+<span class="fc" id="L248">                .map(a -&gt; new LgpdExportDto.AuditoriaDados(</span>
+<span class="fc" id="L249">                        a.getId(),</span>
+<span class="fc" id="L250">                        a.getAcao(),</span>
+<span class="fc" id="L251">                        a.getDescricao(),</span>
+<span class="fc" id="L252">                        a.getDataHora(),</span>
+<span class="fc" id="L253">                        a.getEnderecoIp(),</span>
+<span class="fc" id="L254">                        a.getEntidadeAfetada(),</span>
+<span class="fc" id="L255">                        a.getEntidadeId()</span>
+<span class="fc" id="L256">                )).toList();</span>
 
-<span class="fc" id="L243">        LgpdExportDto.UsuarioDados cadastral = new LgpdExportDto.UsuarioDados(</span>
-<span class="fc" id="L244">                usuario.getId(),</span>
-<span class="fc" id="L245">                usuario.getNome(),</span>
-<span class="fc" id="L246">                usuario.getEmail(),</span>
-<span class="fc" id="L247">                usuario.getCriadoEm(),</span>
-<span class="fc" id="L248">                usuario.getAceitouTermosLgpd(),</span>
-<span class="fc" id="L249">                usuario.getDataAceiteLgpd(),</span>
-<span class="fc" id="L250">                usuario.getVersaoTermoLgpd()</span>
+<span class="fc" id="L258">        LgpdExportDto.UsuarioDados cadastral = new LgpdExportDto.UsuarioDados(</span>
+<span class="fc" id="L259">                usuario.getId(),</span>
+<span class="fc" id="L260">                usuario.getNome(),</span>
+<span class="fc" id="L261">                usuario.getEmail(),</span>
+<span class="fc" id="L262">                usuario.getCriadoEm(),</span>
+<span class="fc" id="L263">                usuario.getAceitouTermosLgpd(),</span>
+<span class="fc" id="L264">                usuario.getDataAceiteLgpd(),</span>
+<span class="fc" id="L265">                usuario.getVersaoTermoLgpd()</span>
         );
 
         // Registra a exportação na Auditoria
-<span class="fc" id="L254">        auditoriaService.registrar(usuario, &quot;EXPORTACAO_DADOS&quot;, &quot;Dados cadastrais e histórico completo exportados pelo usuário.&quot;, &quot;Usuario&quot;, usuarioId);</span>
+<span class="fc" id="L269">        auditoriaService.registrar(usuario, &quot;EXPORTACAO_DADOS&quot;, &quot;Dados cadastrais e histórico completo exportados pelo usuário.&quot;, &quot;Usuario&quot;, usuarioId);</span>
 
-<span class="fc" id="L256">        return new LgpdExportDto(cadastral, casas, despesas, pagamentos, tarefas, auditorias);</span>
+<span class="fc" id="L271">        return new LgpdExportDto(cadastral, casas, despesas, pagamentos, tarefas, auditorias);</span>
+    }
+
+    @Transactional
+    public Usuario confirmarEmail(String token) {
+<span class="nc" id="L276">        Usuario usuario = usuarioRepository.findByTokenConfirmacao(token)</span>
+<span class="nc" id="L277">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Token de confirmação inválido ou não encontrado.&quot;));</span>
+
+<span class="nc" id="L279">        usuario.setEmailConfirmado(true);</span>
+<span class="nc" id="L280">        usuario.setTokenConfirmacao(null);</span>
+<span class="nc" id="L281">        Usuario usuarioSalvo = usuarioRepository.save(usuario);</span>
+
+        // Registra o evento de confirmação na Auditoria
+<span class="nc" id="L284">        auditoriaService.registrar(usuarioSalvo, &quot;CONFIRMACAO_EMAIL&quot;, &quot;E-mail de cadastro verificado com sucesso via token.&quot;, &quot;Usuario&quot;, usuarioSalvo.getId());</span>
+
+<span class="nc" id="L286">        return usuarioSalvo;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

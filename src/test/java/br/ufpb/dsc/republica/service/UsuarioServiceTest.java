@@ -47,6 +47,9 @@ class UsuarioServiceTest {
     @Mock
     private AuditoriaService auditoriaService;
 
+    @Mock
+    private EmailService emailService;
+
     @InjectMocks
     private UsuarioService usuarioService;
 

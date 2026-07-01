@@ -32,3 +32,8 @@ management:
 
 server:
   forward-headers-strategy: native
+
+resend:
+  api:
+    key: ${RESEND_API_KEY:dummy-key}
+  from: ${RESEND_FROM:onboarding@resend.dev}
