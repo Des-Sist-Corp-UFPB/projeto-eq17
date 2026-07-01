@@ -6,19 +6,28 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Classe principal da aplicação HomeHub — Gestão de Repúblicas Universitárias.
- * a
- * <p>A anotação {@code @SpringBootApplication} é um atalho que combina três anotações:
+ * aa
+ * <p>
+ * A anotação {@code @SpringBootApplication} é um atalho que combina três
+ * anotações:
  * <ul>
- *   <li>{@code @Configuration} — indica que esta classe pode declarar beans Spring (métodos @Bean).</li>
- *   <li>{@code @EnableAutoConfiguration} — habilita a autoconfiguração do Spring Boot, que detecta
- *       automaticamente as dependências no classpath e configura beans necessários (ex.: DataSource
- *       para o banco, DispatcherServlet para web, etc.).</li>
- *   <li>{@code @ComponentScan} — escaneia o pacote atual e todos os subpacotes procurando por
- *       componentes Spring anotados com {@code @Component}, {@code @Service}, {@code @Repository},
- *       {@code @Controller}, etc.</li>
+ * <li>{@code @Configuration} — indica que esta classe pode declarar beans
+ * Spring (métodos @Bean).</li>
+ * <li>{@code @EnableAutoConfiguration} — habilita a autoconfiguração do Spring
+ * Boot, que detecta
+ * automaticamente as dependências no classpath e configura beans necessários
+ * (ex.: DataSource
+ * para o banco, DispatcherServlet para web, etc.).</li>
+ * <li>{@code @ComponentScan} — escaneia o pacote atual e todos os subpacotes
+ * procurando por
+ * componentes Spring anotados com {@code @Component}, {@code @Service},
+ * {@code @Repository},
+ * {@code @Controller}, etc.</li>
  * </ul>
  *
- * <p><strong>Disciplina:</strong> Desenvolvimento de Sistemas Corporativos (DSC)<br>
+ * <p>
+ * <strong>Disciplina:</strong> Desenvolvimento de Sistemas Corporativos
+ * (DSC)<br>
  * <strong>Professor:</strong> Rodrigo Rebouças — UFPB Campus IV
  *
  * @author DSC - UFPB Campus IV
@@ -31,10 +40,14 @@ public class RepublicaApplication {
     /**
      * Ponto de entrada da JVM.
      *
-     * <p>{@code SpringApplication.run()} inicializa o contexto do Spring, cria todos os beans,
-     * executa as migrações do Flyway e sobe o servidor embutido (Tomcat, por padrão).
+     * <p>
+     * {@code SpringApplication.run()} inicializa o contexto do Spring, cria todos
+     * os beans,
+     * executa as migrações do Flyway e sobe o servidor embutido (Tomcat, por
+     * padrão).
      *
-     * @param args argumentos de linha de comando (podem sobrescrever propriedades do application.yml)
+     * @param args argumentos de linha de comando (podem sobrescrever propriedades
+     *             do application.yml)
      */
     public static void main(String[] args) {
         SpringApplication.run(RepublicaApplication.class, args);
