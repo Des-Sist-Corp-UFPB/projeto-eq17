@@ -5,6 +5,8 @@ Projeto base (boilerplate) para a disciplina **Desenvolvimento de Sistemas Corpo
 **Professor**: Rodrigo Rebouças | **UFPB — Campus IV**
 
 ---
+**Nome:** Ramon Alves da Silva
+**Github:** GimiliOgrande
 
 ## Tecnologias
 
