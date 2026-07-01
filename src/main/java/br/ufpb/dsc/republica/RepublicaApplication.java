@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Classe principal da aplicação HomeHub — Gestão de Repúblicas Universitárias.
- *
+ * a
  * <p>A anotação {@code @SpringBootApplication} é um atalho que combina três anotações:
  * <ul>
  *   <li>{@code @Configuration} — indica que esta classe pode declarar beans Spring (métodos @Bean).</li>
