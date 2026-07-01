@@ -382,14 +382,25 @@ O sistema de auditoria foi implementado para monitorar e registrar ações crít
 
 ## Integração com Serviço Externo
 
-O projeto se integra a um serviço de autenticação social externo para facilitar o login dos usuários.
+O projeto se integra a dois serviços externos principais:
 
-- **Serviço Externo Integrado:** Google OAuth2 (Google Identity Platform).
+### 1. Google OAuth2 (Google Identity Platform)
 - **Para que é usado:** Permitir que os usuários realizem cadastro e login na aplicação utilizando suas contas do Google de forma simplificada.
 - **Como é configurado:**
   - Configurado no arquivo [application.yml](file:///src/main/resources/application.yml) sob as propriedades de `spring.security.oauth2.client`.
-  - As chaves de acesso são parametrizadas pelas variáveis de ambiente `${GOOGLE_CLIENT_ID}` e `${GOOGLE_CLIENT_SECRET}`, configuradas em produção pelo arquivo `.env` (em ambiente de desenvolvimento, utiliza valores dummy padrão para não impedir a inicialização).
+  - As chaves de acesso são parametrizadas pelas variáveis de ambiente `${GOOGLE_CLIENT_ID}` e `${GOOGLE_CLIENT_SECRET}` no arquivo `.env` (em ambiente de desenvolvimento, utiliza valores dummy padrão para não impedir a inicialização).
 - **Classes e arquivos participantes:**
   - Configuração de Segurança: [SecurityConfig.java](file:///src/main/java/br/ufpb/dsc/republica/config/SecurityConfig.java) (habilita o oauth2Login)
   - Manipulador de Sucesso: [CustomOAuth2SuccessHandler.java](file:///src/main/java/br/ufpb/dsc/republica/config/CustomOAuth2SuccessHandler.java) (intercepta a autenticação com sucesso, extrai e-mail e nome e redireciona o usuário para o dashboard)
   - Cadastro de Usuário: [UsuarioService.java](file:///src/main/java/br/ufpb/dsc/republica/service/UsuarioService.java) (através do método `registrarOuObterUsuarioOAuth2` cria o usuário local com base nos dados externos)
+
+### 2. Resend (Email Delivery Platform)
+- **Para que é usado:** Enviar e-mails transacionais de confirmação de cadastro de conta para novos usuários registrados no sistema.
+- **Como é configurado:**
+  - Configurado no arquivo [application.yml](file:///src/main/resources/application.yml) sob as propriedades de `resend`.
+  - A chave de API do serviço é parametrizada no arquivo `.env` via variável de ambiente `${RESEND_API_KEY}`. O remetente dos e-mails é parametrizado via `${RESEND_FROM}` (com valor padrão `onboarding@resend.dev`).
+- **Classes e arquivos participantes:**
+  - Serviço de E-mail: [EmailService.java](file:///src/main/java/br/ufpb/dsc/republica/service/EmailService.java) (realiza a chamada HTTP POST para a API do Resend `https://api.resend.com/emails` usando `RestClient`)
+  - Registro de Usuário: [UsuarioService.java](file:///src/main/java/br/ufpb/dsc/republica/service/UsuarioService.java) (gera o token UUID, salva com `emailConfirmado = false` e aciona o `EmailService`)
+  - Controller de Confirmação: [EmailConfirmacaoController.java](file:///src/main/java/br/ufpb/dsc/republica/controller/EmailConfirmacaoController.java) (provê o endpoint GET `/api/auth/confirmar-email?token=...` que valida o token e ativa o cadastro)
+  - Bloqueio de Login: [CustomUserDetailsService.java](file:///src/main/java/br/ufpb/dsc/republica/config/CustomUserDetailsService.java) (barra o login lançando `DisabledException` caso o e-mail não tenha sido verificado via token)
