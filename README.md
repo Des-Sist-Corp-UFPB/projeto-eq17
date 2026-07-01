@@ -396,13 +396,13 @@ O projeto se integra a dois serviços externos principais:
   - Manipulador de Sucesso: [CustomOAuth2SuccessHandler.java](file:///src/main/java/br/ufpb/dsc/republica/config/CustomOAuth2SuccessHandler.java) (intercepta a autenticação com sucesso, extrai e-mail e nome e redireciona o usuário para o dashboard)
   - Cadastro de Usuário: [UsuarioService.java](file:///src/main/java/br/ufpb/dsc/republica/service/UsuarioService.java) (através do método `registrarOuObterUsuarioOAuth2` cria o usuário local com base nos dados externos)
 
-### 2. Resend (Email Delivery Platform)
+### 2. Gmail SMTP (Email Delivery Service)
 - **Para que é usado:** Enviar e-mails transacionais de confirmação de cadastro de conta para novos usuários registrados no sistema.
 - **Como é configurado:**
-  - Configurado no arquivo [application.yml](file:///src/main/resources/application.yml) sob as propriedades de `resend`.
-  - A chave de API do serviço é parametrizada no arquivo `.env` via variável de ambiente `${RESEND_API_KEY}`. O remetente dos e-mails é parametrizado via `${RESEND_FROM}` (com valor padrão `onboarding@resend.dev`).
+  - Configurado no arquivo [application.yml](file:///src/main/resources/application.yml) sob as propriedades de `spring.mail`.
+  - O e-mail de envio (`spring.mail.username`) e a senha de app do Gmail (`spring.mail.password`) são parametrizados no arquivo `.env` via variáveis de ambiente `${SPRING_MAIL_USERNAME}` e `${SPRING_MAIL_PASSWORD}`.
 - **Classes e arquivos participantes:**
-  - Serviço de E-mail: [EmailService.java](file:///src/main/java/br/ufpb/dsc/republica/service/EmailService.java) (realiza a chamada HTTP POST para a API do Resend `https://api.resend.com/emails` usando `RestClient`)
+  - Serviço de E-mail: [EmailService.java](file:///src/main/java/br/ufpb/dsc/republica/service/EmailService.java) (realiza o envio de e-mails em HTML via protocolo SMTP usando a classe `JavaMailSender`)
   - Registro de Usuário: [UsuarioService.java](file:///src/main/java/br/ufpb/dsc/republica/service/UsuarioService.java) (gera o token UUID, salva com `emailConfirmado = false` e aciona o `EmailService`)
   - Controller de Confirmação: [EmailConfirmacaoController.java](file:///src/main/java/br/ufpb/dsc/republica/controller/EmailConfirmacaoController.java) (provê o endpoint GET `/api/auth/confirmar-email?token=...` que valida o token e ativa o cadastro)
   - Bloqueio de Login: [CustomUserDetailsService.java](file:///src/main/java/br/ufpb/dsc/republica/config/CustomUserDetailsService.java) (barra o login lançando `DisabledException` caso o e-mail não tenha sido verificado via token)

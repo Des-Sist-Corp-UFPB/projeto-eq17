@@ -1,43 +1,39 @@
 package br.ufpb.dsc.republica.service;
 
 import br.ufpb.dsc.republica.domain.Usuario;
+import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-
-import java.util.List;
-import java.util.Map;
 
 @Service
 public class EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
-    private final RestClient restClient;
+    private final JavaMailSender mailSender;
 
-    @Value("${resend.api.key:}")
-    private String apiKey;
-
-    @Value("${resend.from:onboarding@resend.dev}")
+    @Value("${spring.mail.username:}")
     private String fromEmail;
 
-    public EmailService() {
-        this.restClient = RestClient.builder()
-                .baseUrl("https://api.resend.com")
-                .build();
+    @Value("${app.url:https://eq17.dsc.rodrigor.com}")
+    private String appUrl;
+
+    public EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
     }
 
     public void enviarEmailConfirmacao(Usuario usuario, String token) {
-        if (apiKey == null || apiKey.isEmpty() || "dummy-key".equals(apiKey)) {
-            logger.warn("Chave de API do Resend não configurada. O e-mail de confirmação não foi enviado.");
-            logger.info("Link de confirmação simulado: http://localhost:8080/api/auth/confirmar-email?token={}", token);
+        if (fromEmail == null || fromEmail.isEmpty()) {
+            logger.warn("E-mail de remetente (spring.mail.username) não configurado. O e-mail de confirmação não foi enviado.");
+            logger.info("Link de confirmação simulado: {}/api/auth/confirmar-email?token={}", appUrl, token);
             return;
         }
 
-        String urlConfirmacao = "http://localhost:8080/api/auth/confirmar-email?token=" + token;
+        String urlConfirmacao = appUrl + "/api/auth/confirmar-email?token=" + token;
         String htmlBody = String.format(
                 "<h3>Olá, %s!</h3>" +
                 "<p>Obrigado por se cadastrar no HomeHub. Para ativar sua conta, clique no link abaixo:</p>" +
@@ -48,22 +44,16 @@ public class EmailService {
                 usuario.getNome(), urlConfirmacao, urlConfirmacao
         );
 
-        Map<String, Object> requestBody = Map.of(
-                "from", fromEmail,
-                "to", List.of(usuario.getEmail()),
-                "subject", "Confirmação de E-mail — HomeHub",
-                "html", htmlBody
-        );
-
         try {
-            restClient.post()
-                    .uri("/emails")
-                    .header("Authorization", "Bearer " + apiKey)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(requestBody)
-                    .retrieve()
-                    .toBodilessEntity();
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
+            helper.setFrom(fromEmail);
+            helper.setTo(usuario.getEmail());
+            helper.setSubject("Confirmação de E-mail — HomeHub");
+            helper.setText(htmlBody, true); // true indica HTML
+
+            mailSender.send(message);
             logger.info("E-mail de confirmação enviado com sucesso para: {}", usuario.getEmail());
         } catch (Exception e) {
             logger.error("Falha ao enviar e-mail de confirmação para {}: {}", usuario.getEmail(), e.getMessage());
