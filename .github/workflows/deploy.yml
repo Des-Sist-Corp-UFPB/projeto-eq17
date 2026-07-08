@@ -22,22 +22,34 @@ jobs:
       - name: Iniciar daemon do Docker (para runner self-hosted)
         run: |
           echo "Tentando iniciar o daemon do Docker..."
-          sudo systemctl start docker || systemctl start docker || service docker start || true
+          # Para qualquer daemon em estado inconsistente
+          sudo service docker stop || true
+          
+          # Inicia dockerd em segundo plano direcionando logs para arquivo
+          sudo dockerd > /tmp/dockerd.log 2>&1 &
           
           echo "Aguardando o Docker inicializar..."
-          for i in {1..10}; do
+          DOCKER_OK=false
+          for i in {1..15}; do
             if docker ps >/dev/null 2>&1; then
               echo "✓ Docker daemon está pronto!"
+              DOCKER_OK=true
               break
             fi
-            echo "Aguardando daemon... ($i/10)"
+            echo "Aguardando daemon... ($i/15)"
             sleep 2
           done
+          
+          if [ "$DOCKER_OK" = false ]; then
+            echo "=== LOGS DO DOCKERD ==="
+            cat /tmp/dockerd.log
+            exit 1
+          fi
           
           # Tenta mudar permissão do socket se necessário
           sudo chmod 666 /var/run/docker.sock || true
           
-          # Verifica conexão final (falha o workflow aqui se não conectar)
+          # Verifica conexão final
           docker ps
 
       - name: Login no GitHub Container Registry
