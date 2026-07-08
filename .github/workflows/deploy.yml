@@ -21,10 +21,14 @@ jobs:
 
       - name: Iniciar daemon do Docker (para runner self-hosted)
         run: |
-          echo "Tentando iniciar o daemon do Docker..."
-          # Para qualquer daemon em estado inconsistente
+          echo "Limpando possíveis processos e arquivos do Docker antigos..."
           sudo service docker stop || true
+          sudo pkill -9 -f dockerd || true
+          sudo pkill -9 -f docker-proxy || true
+          sudo rm -f /var/run/docker.pid
+          sudo rm -f /var/run/docker.sock
           
+          echo "Tentando iniciar o daemon do Docker..."
           # Inicia dockerd em segundo plano direcionando logs para arquivo
           sudo dockerd > /tmp/dockerd.log 2>&1 &
           
