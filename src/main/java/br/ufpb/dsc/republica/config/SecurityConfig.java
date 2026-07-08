@@ -76,8 +76,14 @@ public class SecurityConfig {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json;charset=UTF-8");
                             String erroMsg = "Credenciais inválidas. Verifique seu e-mail e senha.";
-                            if (exception instanceof org.springframework.security.authentication.DisabledException) {
-                                erroMsg = exception.getMessage();
+                            
+                            Throwable cause = exception;
+                            if (exception instanceof org.springframework.security.authentication.InternalAuthenticationServiceException && exception.getCause() != null) {
+                                cause = exception.getCause();
+                            }
+                            
+                            if (cause instanceof org.springframework.security.authentication.DisabledException) {
+                                erroMsg = cause.getMessage();
                             }
                             response.getWriter().write("{\"erro\": \"" + erroMsg + "\"}");
                         })
