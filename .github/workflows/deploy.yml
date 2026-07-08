@@ -25,8 +25,10 @@ jobs:
           sudo service docker stop || true
           sudo pkill -9 -f dockerd || true
           sudo pkill -9 -f docker-proxy || true
+          sudo pkill -9 -f containerd || true
           sudo rm -f /var/run/docker.pid
           sudo rm -f /var/run/docker.sock
+          sudo rm -rf /var/run/containerd/* || true
           
           echo "Tentando iniciar o daemon do Docker..."
           # Inicia dockerd em segundo plano direcionando logs para arquivo
