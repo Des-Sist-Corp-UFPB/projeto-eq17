@@ -26,6 +26,13 @@ jobs:
           groups
           echo "=== DOCKER SOCKET ==="
           ls -lh /var/run/docker.sock || true
+          echo "=== SYSTEMCTL STATUS ==="
+          systemctl status docker || service docker status || true
+          echo "=== SELINUX / APPARMOR ==="
+          getenforce || true
+          aa-status || true
+          echo "=== TRY START DOCKER ==="
+          systemctl start docker || service docker start || true
           echo "=== DOCKER CMD TEST ==="
           docker ps || true
 
