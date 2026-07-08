@@ -6,6 +6,9 @@ import { LogIn, ShieldAlert } from 'lucide-react';
 export default function Login() {
   const [searchParams] = useSearchParams();
   const showRegisteredMsg = searchParams.get('registered') === 'true';
+  const showConfirmedMsg = searchParams.get('confirmed') === 'true';
+  const showConfirmedErrorMsg = searchParams.get('confirmed') === 'false';
+  const confirmedErrorText = searchParams.get('error') || 'Token de confirmação inválido ou expirado.';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
@@ -27,7 +30,11 @@ export default function Login() {
       await login(email, password);
       navigate('/');
     } catch (err: any) {
-      setLocalError(err.message || 'Credenciais inválidas. Tente novamente.');
+      if (err.message && (err.message.includes('não foi verificado') || err.message.includes('verificado'))) {
+        setLocalError('unverified_email');
+      } else {
+        setLocalError('invalid_credentials');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -86,6 +93,42 @@ export default function Login() {
           </div>
         )}
 
+        {showConfirmedMsg && (
+          <div style={{
+            background: 'rgba(16, 185, 129, 0.08)',
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            color: 'var(--color-success)',
+            fontSize: '0.85rem',
+            marginBottom: '24px',
+            lineHeight: '1.4'
+          }}>
+            <strong>E-mail verificado com sucesso!</strong>
+            <p style={{ marginTop: '4px', margin: 0 }}>
+              Sua conta foi ativada. Agora você já pode fazer login para acessar o sistema.
+            </p>
+          </div>
+        )}
+
+        {showConfirmedErrorMsg && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            color: 'var(--color-danger)',
+            fontSize: '0.85rem',
+            marginBottom: '24px',
+            lineHeight: '1.4'
+          }}>
+            <strong>Falha na ativação da conta</strong>
+            <p style={{ marginTop: '4px', margin: 0 }}>
+              {confirmedErrorText}
+            </p>
+          </div>
+        )}
+
         {localError && (
           <div style={{
             background: 'rgba(239, 68, 68, 0.08)',
@@ -96,11 +139,30 @@ export default function Login() {
             fontSize: '0.85rem',
             marginBottom: '24px',
             display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
+            alignItems: 'flex-start',
+            gap: '8px',
+            lineHeight: '1.4'
           }}>
-            <ShieldAlert size={16} style={{ flexShrink: 0 }} />
-            <span>{localError}</span>
+            <ShieldAlert size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              {localError === 'unverified_email' ? (
+                <>
+                  <strong>E-mail não verificado!</strong>
+                  <p style={{ marginTop: '4px', margin: 0 }}>
+                    Sua conta ainda não está ativa. Por favor, verifique sua caixa de entrada (e caixa de spam) para encontrar o link de ativação enviado.
+                  </p>
+                </>
+              ) : localError === 'invalid_credentials' ? (
+                <>
+                  <strong>Falha na autenticação</strong>
+                  <p style={{ marginTop: '4px', margin: 0 }}>
+                    E-mail ou senha incorretos. Por favor, verifique suas credenciais e tente novamente.
+                  </p>
+                </>
+              ) : (
+                <span>{localError}</span>
+              )}
+            </div>
           </div>
         )}
 
