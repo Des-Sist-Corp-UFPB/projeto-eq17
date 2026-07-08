@@ -75,7 +75,11 @@ public class SecurityConfig {
                         .failureHandler((request, response, exception) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json;charset=UTF-8");
-                            response.getWriter().write("{\"erro\": \"Credenciais inválidas. Verifique seu e-mail e senha.\"}");
+                            String erroMsg = "Credenciais inválidas. Verifique seu e-mail e senha.";
+                            if (exception instanceof org.springframework.security.authentication.DisabledException) {
+                                erroMsg = exception.getMessage();
+                            }
+                            response.getWriter().write("{\"erro\": \"" + erroMsg + "\"}");
                         })
                         .permitAll()
                 )
