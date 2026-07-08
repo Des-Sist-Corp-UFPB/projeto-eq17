@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LogIn, ShieldAlert } from 'lucide-react';
 
 export default function Login() {
+  const [searchParams] = useSearchParams();
+  const showRegisteredMsg = searchParams.get('registered') === 'true';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
@@ -65,6 +67,24 @@ export default function Login() {
             Gestão de Repúblicas Universitárias
           </p>
         </div>
+
+        {showRegisteredMsg && (
+          <div style={{
+            background: 'rgba(16, 185, 129, 0.08)',
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            color: 'var(--color-success)',
+            fontSize: '0.85rem',
+            marginBottom: '24px',
+            lineHeight: '1.4'
+          }}>
+            <strong>Cadastro realizado com sucesso!</strong>
+            <p style={{ marginTop: '4px', margin: 0 }}>
+              Um e-mail de confirmação foi enviado. Por favor, verifique sua caixa de entrada para confirmar seu endereço antes de fazer login.
+            </p>
+          </div>
+        )}
 
         {localError && (
           <div style={{

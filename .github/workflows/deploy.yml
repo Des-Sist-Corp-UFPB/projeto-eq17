@@ -19,22 +19,9 @@ jobs:
       - name: Prepara nome da imagem (lowercase)
         run: echo "IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]'):latest" >> $GITHUB_ENV
 
-      - name: Debug Docker Permissions
+      - name: Iniciar daemon do Docker (para runner self-hosted)
         run: |
-          echo "=== USER AND GROUPS ==="
-          whoami
-          groups
-          echo "=== DOCKER SOCKET ==="
-          ls -lh /var/run/docker.sock || true
-          echo "=== SYSTEMCTL STATUS ==="
-          systemctl status docker || service docker status || true
-          echo "=== SELINUX / APPARMOR ==="
-          getenforce || true
-          aa-status || true
-          echo "=== TRY START DOCKER ==="
           systemctl start docker || service docker start || true
-          echo "=== DOCKER CMD TEST ==="
-          docker ps || true
 
       - name: Login no GitHub Container Registry
         uses: docker/login-action@v3

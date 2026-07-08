@@ -37,6 +37,10 @@ export default function Register() {
       await register(name, email, password, true, '1.0');
       navigate('/');
     } catch (err: any) {
+      if (err.message && (err.message.includes('não foi verificado') || err.message.includes('verificado'))) {
+        navigate('/login?registered=true');
+        return;
+      }
       setLocalError(err.message || 'Erro ao efetuar cadastro. Verifique os dados.');
     } finally {
       setSubmitting(false);
