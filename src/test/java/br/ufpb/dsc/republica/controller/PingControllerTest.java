@@ -39,6 +39,7 @@ public class PingControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.status").value("ok"))
+                .andExpect(jsonPath("$.database").value("ok"))
                 .andExpect(jsonPath("$.service").value("eq17"))
                 .andExpect(jsonPath("$.timestamp").exists());
     }
