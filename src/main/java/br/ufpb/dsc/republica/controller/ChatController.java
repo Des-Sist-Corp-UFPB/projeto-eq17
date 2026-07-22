@@ -24,18 +24,18 @@ public class ChatController {
     private final MoradorRepository moradorRepository;
 
     public ChatController(ChatClient.Builder chatClientBuilder,
-                          ToolCallbackProvider republicaToolsCallbackProvider,
+                          br.ufpb.dsc.republica.service.RepublicaTools republicaTools,
                           UsuarioRepository usuarioRepository,
                           MoradorRepository moradorRepository) {
         this.usuarioRepository = usuarioRepository;
         this.moradorRepository = moradorRepository;
         
-        // Constrói o ChatClient injetando as ferramentas do MCP automaticamente
+        // Constrói o ChatClient injetando o service de ferramentas
         this.chatClient = chatClientBuilder
-                .defaultTools((Object[]) republicaToolsCallbackProvider.getToolCallbacks())
+                .defaultTools(republicaTools)
                 .build();
-
     }
+
 
     @PostMapping
     public ResponseEntity<ChatResponseDto> conversar(@RequestBody ChatRequestDto request, Principal principal) {

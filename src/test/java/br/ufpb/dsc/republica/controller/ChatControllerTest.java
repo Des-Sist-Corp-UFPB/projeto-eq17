@@ -5,12 +5,12 @@ import br.ufpb.dsc.republica.domain.Usuario;
 import br.ufpb.dsc.republica.dto.ChatRequestDto;
 import br.ufpb.dsc.republica.repository.MoradorRepository;
 import br.ufpb.dsc.republica.repository.UsuarioRepository;
+import br.ufpb.dsc.republica.service.RepublicaTools;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -53,6 +53,9 @@ public class ChatControllerTest {
     private MoradorRepository moradorRepository;
 
     @MockitoBean
+    private RepublicaTools republicaTools;
+
+    @MockitoBean
     private CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
 
     private Usuario usuario;
@@ -78,13 +81,6 @@ public class ChatControllerTest {
             when(builder.build()).thenReturn(mockChatClient);
 
             return builder;
-        }
-
-        @Bean
-        public ToolCallbackProvider toolCallbackProvider() {
-            ToolCallbackProvider provider = mock(ToolCallbackProvider.class);
-            when(provider.getToolCallbacks()).thenReturn(new ToolCallback[0]);
-            return provider;
         }
     }
 
