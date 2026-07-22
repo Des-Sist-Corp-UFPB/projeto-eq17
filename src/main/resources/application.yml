@@ -30,11 +30,12 @@ spring:
             user-name-attribute: email
   ai:
     openai:
-      api-key: ${SPRING_AI_OPENAI_API_KEY}
-      base-url: ${SPRING_AI_OPENAI_BASE_URL}
+      api-key: ${SPRING_AI_OPENAI_API_KEY:default-key-please-change}
+      base-url: ${SPRING_AI_OPENAI_BASE_URL:https://api.openai.com}
       chat:
         options:
           model: ${SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL:gpt-4o-mini}
+
     mcp:
       server:
         name: republica-mcp
