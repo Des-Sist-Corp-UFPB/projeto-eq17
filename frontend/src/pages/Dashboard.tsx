@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { LogOut, Plus, MapPin, Calendar, LayoutDashboard, ShieldAlert, Download, Trash2 } from 'lucide-react';
 import NotificacoesMenu from '../components/NotificacoesMenu';
+import IaAssistant from '../components/IaAssistant';
+
 
 interface Casa {
   id: number;
@@ -565,6 +567,7 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+      <IaAssistant />
     </div>
   );
 }

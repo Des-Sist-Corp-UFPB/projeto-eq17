@@ -28,6 +28,19 @@ spring:
         provider:
           google:
             user-name-attribute: email
+  ai:
+    openai:
+      api-key: ${SPRING_AI_OPENAI_API_KEY}
+      base-url: ${SPRING_AI_OPENAI_BASE_URL}
+      chat:
+        options:
+          model: ${SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL:gpt-4o-mini}
+    mcp:
+      server:
+        name: republica-mcp
+        version: 1.0.0
+        protocol: STREAMABLE
+
 
 # Actuator - monitoramento da aplicação
 # Acesse: http://localhost:8080/actuator/health

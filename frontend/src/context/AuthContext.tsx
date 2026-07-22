@@ -12,6 +12,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitialLoading: boolean;
   error: string | null;
   login: (email: string, targetPassword: string) => Promise<void>;
   register: (name: string, email: string, targetPassword: string, aceitouTermosLgpd: boolean, versaoTermoLgpd: string) => Promise<void>;
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   // Verifica se o usuário já está logado na inicialização
@@ -42,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
+      setIsInitialLoading(false);
     }
   }
 
@@ -113,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isAuthenticated,
         isLoading,
+        isInitialLoading,
         error,
         login,
         register,

@@ -9,9 +9,9 @@ import PoliticaPrivacidade from './pages/PoliticaPrivacidade';
 
 // Componente para Proteger Rotas Privadas
 function PrivateRoute({ children }: { children: React.JSX.Element }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isInitialLoading } = useAuth();
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <div style={{
         minHeight: '100vh',
@@ -33,9 +33,9 @@ function PrivateRoute({ children }: { children: React.JSX.Element }) {
 
 // Componente para impedir que usuários logados entrem na tela de login/cadastro
 function PublicOnlyRoute({ children }: { children: React.JSX.Element }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isInitialLoading } = useAuth();
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <div style={{
         minHeight: '100vh',

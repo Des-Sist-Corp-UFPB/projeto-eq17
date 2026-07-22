@@ -406,3 +406,30 @@ O projeto se integra a dois serviços externos principais:
   - Registro de Usuário: [UsuarioService.java](file:///src/main/java/br/ufpb/dsc/republica/service/UsuarioService.java) (gera o token UUID, salva com `emailConfirmado = false` e aciona o `EmailService`)
   - Controller de Confirmação: [EmailConfirmacaoController.java](file:///src/main/java/br/ufpb/dsc/republica/controller/EmailConfirmacaoController.java) (provê o endpoint GET `/api/auth/confirmar-email?token=...` que valida o token e ativa o cadastro)
   - Bloqueio de Login: [CustomUserDetailsService.java](file:///src/main/java/br/ufpb/dsc/republica/config/CustomUserDetailsService.java) (barra o login lançando `DisabledException` caso o e-mail não tenha sido verificado via token)
+
+### 3. OpenAI LLM (Assistente de Inteligência Artificial do HomeHub)
+- **Para que é usado:** Permitir que o morador gerencie sua república conversando em linguagem natural (ex: pedir para lançar despesas, ratear contas, verificar saldo devedor em aberto e notificar moradores). A IA processa a solicitação e executa ações de forma automática e auditada por meio de ferramentas (tools) Java acopladas.
+- **Como é configurado:**
+  - Configurado no arquivo [application.yml](file:///src/main/resources/application.yml) sob as propriedades de `spring.ai.openai`.
+  - A API Key (`spring.ai.openai.api-key`), URL Base (`spring.ai.openai.base-url`) e Modelo (`spring.ai.openai.chat.options.model`) são parametrizados no arquivo `.env` via variáveis `${SPRING_AI_OPENAI_API_KEY}`, `${SPRING_AI_OPENAI_BASE_URL}` e `${SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL}`.
+- **Classes e arquivos participantes:**
+  - Classe de Ferramentas: [RepublicaTools.java](file:///src/main/java/br/ufpb/dsc/republica/service/RepublicaTools.java) (ferramentas anotadas com `@Tool` e recurso de extrato anotado com `@McpResource`).
+  - Bean de Configuração: [McpServerConfig.java](file:///src/main/java/br/ufpb/dsc/republica/config/McpServerConfig.java) (registra as ferramentas no ecossistema do Spring AI).
+  - Controller de Chat: [ChatController.java](file:///src/main/java/br/ufpb/dsc/republica/controller/ChatController.java) (provê a rota `/api/chat` usando o `ChatClient` com suporte a chamadas de função automáticas).
+  - Interface do Chatbot: [IaAssistant.tsx](file:///frontend/src/components/IaAssistant.tsx) (componente React flutuante premium no painel do usuário).
+
+---
+
+## Model Context Protocol (MCP)
+
+O sistema HomeHub atua como um **servidor MCP (Model Context Protocol)** completo, permitindo que assistentes externos de IA compatíveis (como Cursor IDE, Claude Desktop, Copilot etc.) interajam de forma segura com as informações da república.
+
+- **Endpoint SSE**: O servidor MCP expõe as ferramentas HTTP no endpoint `/mcp/messages`.
+- **Recursos Expostos**: O extrato financeiro completo da casa é exposto como um recurso somente leitura no formato de URI template `republica://casa/{casaId}/extrato`.
+- **Ferramentas Disponíveis**:
+  - `registrar_despesa(casaId, descricao, valorTotal, vencimento, responsavelId, tipo, chavePix, usuarioEmail)` — lança e rateia uma despesa.
+  - `dividir_despesas(casaId, mes, usuarioEmail)` — retorna o rateio de despesas do mês especificado.
+  - `saldo_morador(moradorId, nomeMorador, emailMorador)` — calcula quanto o morador deve em aberto.
+  - `notificar_moradores(casaId, titulo, mensagem, usuarioEmail)` — envia um aviso geral de morador.
+- **Segurança e Log de Auditoria**: Qualquer chamada que altere o banco de dados (como registro de despesas ou envio de notificações) exige o e-mail do operador (`usuarioEmail`) e grava automaticamente no log de auditoria do sistema em conformidade com as regras de conformidade e segurança da disciplina.
+
