@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
-import { MessageSquare, X, Send, Sparkles, User, Loader2 } from 'lucide-react';
+import { X, Send, Sparkles, User, Loader2 } from 'lucide-react';
+
 
 interface Mensagem {
   id: number;
