@@ -4,7 +4,6 @@ import br.ufpb.dsc.republica.domain.*;
 import br.ufpb.dsc.republica.dto.DespesaForm;
 import br.ufpb.dsc.republica.repository.*;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -244,8 +243,8 @@ public class RepublicaTools {
         }
     }
 
-    @McpResource(uri = "republica://casa/{casaId}/extrato", name = "Extrato Financeiro da Casa", description = "Fornece o extrato detalhado de despesas e status de pagamento de uma casa.")
-    public String extratoCasa(Long casaId) {
+    @Tool(description = "Fornece o extrato financeiro detalhado de despesas e status de pagamento de uma casa pelo seu ID")
+    public String extrato_casa(Long casaId) {
         try {
             Casa casa = casaRepository.findById(casaId)
                     .orElseThrow(() -> new IllegalArgumentException("Casa não encontrada com o ID: " + casaId));

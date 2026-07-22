@@ -187,7 +187,8 @@ public class RepublicaToolsTest {
 
         when(despesaRepository.findByCasaIdAndExcluidoFalseOrderByVencimentoAsc(1L)).thenReturn(despesas);
 
-        String result = republicaTools.extratoCasa(1L);
+        String result = republicaTools.extrato_casa(1L);
+
 
         assertTrue(result.contains("EXTRATO FINANCEIRO"));
         assertTrue(result.contains("Água"));
