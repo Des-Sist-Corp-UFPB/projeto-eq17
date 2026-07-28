@@ -54,9 +54,16 @@ services:
       SPRING_DATASOURCE_PASSWORD: republicas123
       SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-smtp.gmail.com}
       SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
-      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:}
-      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
       APP_URL: ${APP_URL:-http://localhost:8080}
+      # Configurações do OpenTelemetry Agent
+      OTEL_SERVICE_NAME: eq17-homehub
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: otlp
     ports:
       - "8080:8080"
     volumes:

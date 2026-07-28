@@ -4,6 +4,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
+import io.opentelemetry.api.trace.Span;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -26,9 +28,22 @@ public class UploadStorageService {
         }
     }
 
+    @WithSpan("salvar-comprovante")
     public String salvarComprovante(MultipartFile arquivo) {
+        if (arquivo != null) {
+            Span.current().setAttribute("comprovante.nome", arquivo.getOriginalFilename());
+            Span.current().setAttribute("comprovante.tamanho", arquivo.getSize());
+            Span.current().setAttribute("comprovante.tipo", arquivo.getContentType());
+        }
         if (arquivo == null || arquivo.isEmpty()) {
             throw new IllegalArgumentException("O arquivo de comprovante não pode ser vazio.");
+        }
+
+        // Simulando gargalo lento para exercício de diagnóstico (será removido posteriormente)
+        try {
+            Thread.sleep(1500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
 
         String contentType = arquivo.getContentType();
@@ -71,6 +86,7 @@ public class UploadStorageService {
         }
     }
 
+    @WithSpan("carregar-comprovante")
     public Resource carregarComprovante(String nomeArquivo) {
         try {
             Path filePath = this.rootPath.resolve(nomeArquivo).normalize();

@@ -43,6 +43,9 @@ COPY --from=frontend-builder /frontend/dist ./src/main/resources/static
 # Compilar e gerar o JAR integrado
 RUN mvn clean package -DskipTests -B -q
 
+# Baixar o agente do OpenTelemetry para produção
+RUN wget -O /build/opentelemetry-javaagent.jar https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar
+
 # ---- Estágio 3: Imagem de Runtime JRE ---------------------------------------
 FROM eclipse-temurin:21-jre-jammy AS runtime
 
@@ -54,6 +57,9 @@ WORKDIR /app
 
 # Copiar apenas o JAR gerado no estágio do backend
 COPY --from=backend-builder /build/target/*.jar app.jar
+
+# Copiar o JAR do agente OTel
+COPY --from=backend-builder /build/opentelemetry-javaagent.jar /app/opentelemetry-javaagent.jar
 
 # Criar diretório de uploads e definir permissões recursivas para o usuário republica
 RUN mkdir -p /app/uploads/comprovantes && \
@@ -70,6 +76,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 
 # Opções JVM para produção
 ENTRYPOINT ["java", \
+    "-javaagent:/app/opentelemetry-javaagent.jar", \
     "-XX:+UseContainerSupport", \
     "-XX:MaxRAMPercentage=75.0", \
     "-Dspring.profiles.active=prod", \

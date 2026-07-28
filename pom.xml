@@ -110,6 +110,17 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- === OPENTELEMETRY === -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-instrumentation-annotations</artifactId>
+            <version>2.12.0</version>
+        </dependency>
+
         <!-- === FRONTEND: Bootstrap + HTMX via WebJars === -->
         <dependency>
             <groupId>org.webjars</groupId>

@@ -5,6 +5,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import br.ufpb.dsc.republica.service.UploadStorageService;
+import br.ufpb.dsc.republica.service.EmailService;
+import br.ufpb.dsc.republica.domain.Usuario;
+import org.springframework.web.multipart.MultipartFile;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -16,9 +20,13 @@ import java.util.Map;
 public class PingController {
 
     private final JdbcTemplate jdbcTemplate;
+    private final UploadStorageService uploadStorageService;
+    private final EmailService emailService;
 
-    public PingController(JdbcTemplate jdbcTemplate) {
+    public PingController(JdbcTemplate jdbcTemplate, UploadStorageService uploadStorageService, EmailService emailService) {
         this.jdbcTemplate = jdbcTemplate;
+        this.uploadStorageService = uploadStorageService;
+        this.emailService = emailService;
     }
 
     @GetMapping("/ping")
@@ -46,5 +54,43 @@ public class PingController {
             response.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
         }
+    }
+
+    @GetMapping("/ping/test-otel")
+    public ResponseEntity<Map<String, Object>> testOtel() {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("status", "running_otel_test");
+
+        // 1. Simula arquivo comprovante para UploadStorageService
+        MultipartFile mockFile = new MultipartFile() {
+            @Override public String getName() { return "comprovante"; }
+            @Override public String getOriginalFilename() { return "comprovante_aluguel.png"; }
+            @Override public String getContentType() { return "image/png"; }
+            @Override public boolean isEmpty() { return false; }
+            @Override public long getSize() { return 1024L; }
+            @Override public byte[] getBytes() { return new byte[1024]; }
+            @Override public java.io.InputStream getInputStream() { return new java.io.ByteArrayInputStream(new byte[1024]); }
+            @Override public void transferTo(java.io.File dest) {}
+        };
+        
+        String nomeComprovante = uploadStorageService.salvarComprovante(mockFile);
+        response.put("uploaded_file", nomeComprovante);
+
+        // 2. Simula envio de e-mail de confirmação
+        Usuario mockUser = new Usuario();
+        mockUser.setNome("Maria OTel");
+        mockUser.setEmail("maria.otel@eq17.com");
+        emailService.enviarEmailConfirmacao(mockUser, "token-teste-otel-123");
+        response.put("email_simulated", "ok");
+
+        // 3. Executa query SQL real no banco para aparecer no trace
+        try {
+            jdbcTemplate.execute("SELECT count(*) FROM usuario");
+            response.put("db_query", "ok");
+        } catch (Exception e) {
+            response.put("db_query", "failed: " + e.getMessage());
+        }
+
+        return ResponseEntity.ok(response);
     }
 }

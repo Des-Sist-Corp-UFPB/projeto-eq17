@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
+import io.opentelemetry.api.trace.Span;
 
 @Service
 public class EmailService {
@@ -26,7 +28,10 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
+    @WithSpan("enviar-email-confirmacao")
     public void enviarEmailConfirmacao(Usuario usuario, String token) {
+        Span.current().setAttribute("email.destinatario", usuario.getEmail());
+        Span.current().setAttribute("usuario.nome", usuario.getNome());
         if (fromEmail == null || fromEmail.isEmpty()) {
             logger.warn("E-mail de remetente (spring.mail.username) não configurado. O e-mail de confirmação não foi enviado.");
             logger.info("Link de confirmação simulado: {}/api/auth/confirmar-email?token={}", appUrl, token);
