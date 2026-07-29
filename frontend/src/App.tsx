@@ -3,9 +3,12 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import EsqueceuSenha from './pages/EsqueceuSenha';
+import RedefinirSenha from './pages/RedefinirSenha';
 import Dashboard from './pages/Dashboard';
 import CasaDetalhes from './pages/CasaDetalhes';
 import PoliticaPrivacidade from './pages/PoliticaPrivacidade';
+
 
 // Componente para Proteger Rotas Privadas
 function PrivateRoute({ children }: { children: React.JSX.Element }) {
@@ -78,6 +81,23 @@ export default function App() {
               </PublicOnlyRoute>
             } 
           />
+          <Route 
+            path="/esqueceu-senha" 
+            element={
+              <PublicOnlyRoute>
+                <EsqueceuSenha />
+              </PublicOnlyRoute>
+            } 
+          />
+          <Route 
+            path="/redefinir-senha" 
+            element={
+              <PublicOnlyRoute>
+                <RedefinirSenha />
+              </PublicOnlyRoute>
+            } 
+          />
+
 
           {/* Rotas Protegidas */}
           <Route 

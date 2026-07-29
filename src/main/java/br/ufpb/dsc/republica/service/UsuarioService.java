@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -285,4 +286,58 @@ public class UsuarioService {
 
         return usuarioSalvo;
     }
+
+    @Transactional
+    public void solicitarRedefinicaoSenha(String email) {
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+        if (usuarioOpt.isEmpty()) {
+            return;
+        }
+
+        Usuario usuario = usuarioOpt.get();
+        String token = UUID.randomUUID().toString();
+        usuario.setTokenRedefinicaoSenha(token);
+        usuario.setValidadeTokenRedefinicao(Instant.now().plus(1, ChronoUnit.HOURS));
+
+        usuarioRepository.save(usuario);
+        auditoriaService.registrar(usuario, "SOLICITACAO_REDEFINICAO_SENHA", "Solicitação de redefinição de senha realizada com sucesso.", "Usuario", usuario.getId());
+        emailService.enviarEmailRedefinicaoSenha(usuario, token);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean validarTokenRedefinicao(String token) {
+        if (token == null || token.isBlank()) {
+            return false;
+        }
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByTokenRedefinicaoSenha(token);
+        if (usuarioOpt.isEmpty()) {
+            return false;
+        }
+        Usuario usuario = usuarioOpt.get();
+        return usuario.getValidadeTokenRedefinicao() != null && usuario.getValidadeTokenRedefinicao().isAfter(Instant.now());
+    }
+
+    @Transactional
+    public Usuario redefinirSenha(String token, String novaSenha) {
+        Usuario usuario = usuarioRepository.findByTokenRedefinicaoSenha(token)
+                .orElseThrow(() -> new IllegalArgumentException("Token de redefinição inválido ou não encontrado."));
+
+        if (usuario.getValidadeTokenRedefinicao() == null || usuario.getValidadeTokenRedefinicao().isBefore(Instant.now())) {
+            throw new IllegalArgumentException("Token de redefinição expirado. Solicite um novo link.");
+        }
+
+        if (novaSenha == null || novaSenha.length() < 6) {
+            throw new IllegalArgumentException("A nova senha deve ter entre 6 e 100 caracteres.");
+        }
+
+        usuario.setSenha(passwordEncoder.encode(novaSenha));
+        usuario.setTokenRedefinicaoSenha(null);
+        usuario.setValidadeTokenRedefinicao(null);
+
+        Usuario usuarioSalvo = usuarioRepository.save(usuario);
+        auditoriaService.registrar(usuarioSalvo, "REDEFINICAO_SENHA", "Senha redefinida com sucesso via token.", "Usuario", usuarioSalvo.getId());
+
+        return usuarioSalvo;
+    }
 }
+

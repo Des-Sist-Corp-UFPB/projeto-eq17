@@ -181,7 +181,23 @@ export default function Login() {
           </div>
 
           <div className="cyber-input-group" style={{ marginBottom: '28px' }}>
-            <label className="cyber-input-label">Senha</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label className="cyber-input-label" style={{ marginBottom: 0 }}>Senha</label>
+              <Link
+                to="/esqueceu-senha"
+                style={{
+                  fontSize: '0.8rem',
+                  color: 'var(--color-accent-blue)',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+              >
+                Esqueceu sua senha?
+              </Link>
+            </div>
             <input
               type="password"
               className="cyber-input"
@@ -192,6 +208,7 @@ export default function Login() {
               autoComplete="current-password"
             />
           </div>
+
 
           <button
             type="submit"

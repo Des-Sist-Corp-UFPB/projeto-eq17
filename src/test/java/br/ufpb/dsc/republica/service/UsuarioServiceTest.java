@@ -369,4 +369,99 @@ class UsuarioServiceTest {
         verify(usuarioRepository, never()).save(any(Usuario.class));
         verify(auditoriaService, times(1)).registrar(any(Usuario.class), eq("LOGIN"), anyString(), eq("Usuario"), eq(100L));
     }
+
+    @Test
+    void solicitarRedefinicaoSenhaDeveGerarTokenEEnviarEmailSeUsuarioExistir() {
+        String email = "usuario@email.com";
+        Usuario usuario = new Usuario("Usuario Teste", email, "senhaCripto");
+        usuario.setId(10L);
+
+        when(usuarioRepository.findByEmail(email)).thenReturn(Optional.of(usuario));
+
+        usuarioService.solicitarRedefinicaoSenha(email);
+
+        assertNotNull(usuario.getTokenRedefinicaoSenha());
+        assertNotNull(usuario.getValidadeTokenRedefinicao());
+        assertTrue(usuario.getValidadeTokenRedefinicao().isAfter(Instant.now()));
+
+        verify(usuarioRepository, times(1)).save(usuario);
+        verify(auditoriaService, times(1)).registrar(eq(usuario), eq("SOLICITACAO_REDEFINICAO_SENHA"), anyString(), eq("Usuario"), eq(10L));
+        verify(emailService, times(1)).enviarEmailRedefinicaoSenha(eq(usuario), anyString());
+    }
+
+    @Test
+    void solicitarRedefinicaoSenhaNaoDeveLancarExcecaoOuEnviarEmailSeUsuarioNaoExistir() {
+        String email = "inexistente@email.com";
+        when(usuarioRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+        assertDoesNotThrow(() -> usuarioService.solicitarRedefinicaoSenha(email));
+
+        verify(usuarioRepository, never()).save(any());
+        verify(emailService, never()).enviarEmailRedefinicaoSenha(any(), any());
+    }
+
+    @Test
+    void validarTokenRedefinicaoDeveRetornarTrueSeTokenValido() {
+        String token = "token-valido-123";
+        Usuario usuario = new Usuario("Teste", "teste@email.com", "senha");
+        usuario.setTokenRedefinicaoSenha(token);
+        usuario.setValidadeTokenRedefinicao(Instant.now().plusSeconds(1800));
+
+        when(usuarioRepository.findByTokenRedefinicaoSenha(token)).thenReturn(Optional.of(usuario));
+
+        boolean result = usuarioService.validarTokenRedefinicao(token);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void validarTokenRedefinicaoDeveRetornarFalseSeTokenExpiradoOuInvalido() {
+        assertFalse(usuarioService.validarTokenRedefinicao(null));
+        assertFalse(usuarioService.validarTokenRedefinicao(""));
+
+        String tokenExpirado = "token-expirado-456";
+        Usuario usuarioExpirado = new Usuario("Teste", "teste@email.com", "senha");
+        usuarioExpirado.setTokenRedefinicaoSenha(tokenExpirado);
+        usuarioExpirado.setValidadeTokenRedefinicao(Instant.now().minusSeconds(10));
+
+        when(usuarioRepository.findByTokenRedefinicaoSenha(tokenExpirado)).thenReturn(Optional.of(usuarioExpirado));
+
+        assertFalse(usuarioService.validarTokenRedefinicao(tokenExpirado));
+    }
+
+    @Test
+    void redefinirSenhaDeveAtualizarSenhaELimparTokenSeValido() {
+        String token = "token-valido-789";
+        Usuario usuario = new Usuario("Teste", "teste@email.com", "senhaAntiga");
+        usuario.setId(20L);
+        usuario.setTokenRedefinicaoSenha(token);
+        usuario.setValidadeTokenRedefinicao(Instant.now().plusSeconds(1800));
+
+        when(usuarioRepository.findByTokenRedefinicaoSenha(token)).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.encode("novaSenha123")).thenReturn("novaSenhaCriptografada");
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(i -> i.getArgument(0));
+
+        Usuario result = usuarioService.redefinirSenha(token, "novaSenha123");
+
+        assertNotNull(result);
+        assertEquals("novaSenhaCriptografada", result.getSenha());
+        assertNull(result.getTokenRedefinicaoSenha());
+        assertNull(result.getValidadeTokenRedefinicao());
+
+        verify(usuarioRepository, times(1)).save(usuario);
+        verify(auditoriaService, times(1)).registrar(eq(usuario), eq("REDEFINICAO_SENHA"), anyString(), eq("Usuario"), eq(20L));
+    }
+
+    @Test
+    void redefinirSenhaDeveLancarExcecaoSeTokenExpirado() {
+        String token = "token-expirado";
+        Usuario usuario = new Usuario("Teste", "teste@email.com", "senha");
+        usuario.setTokenRedefinicaoSenha(token);
+        usuario.setValidadeTokenRedefinicao(Instant.now().minusSeconds(100));
+
+        when(usuarioRepository.findByTokenRedefinicaoSenha(token)).thenReturn(Optional.of(usuario));
+
+        assertThrows(IllegalArgumentException.class, () -> usuarioService.redefinirSenha(token, "novaSenha123"));
+    }
 }
+
