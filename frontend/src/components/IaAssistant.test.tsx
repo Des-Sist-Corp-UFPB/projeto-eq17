@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import IaAssistant from './IaAssistant';
@@ -20,7 +19,7 @@ describe('IaAssistant Component', () => {
       resposta: 'Sua conta de energia foi lançada com sucesso.',
     });
 
-    render(<IaAssistant casaId={1} />);
+    render(<IaAssistant />);
 
     const openButton = screen.getByTitle('Conversar com assistente de IA');
     fireEvent.click(openButton);

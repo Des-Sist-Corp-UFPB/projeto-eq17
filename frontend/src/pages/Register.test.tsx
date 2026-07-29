@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
@@ -18,7 +17,10 @@ describe('Register Page Component', () => {
       register: mockRegister,
       user: null,
       isAuthenticated: false,
+      isLoading: false,
       isInitialLoading: false,
+      error: null,
+      clearError: vi.fn(),
       login: vi.fn(),
       logout: vi.fn(),
     });

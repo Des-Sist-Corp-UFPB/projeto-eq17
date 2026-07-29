@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
@@ -24,7 +23,10 @@ describe('Dashboard Component', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 1, nome: 'João Silva', email: 'joao@email.com' },
       isAuthenticated: true,
+      isLoading: false,
       isInitialLoading: false,
+      error: null,
+      clearError: vi.fn(),
       login: vi.fn(),
       logout: vi.fn(),
       register: vi.fn(),
