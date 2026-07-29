@@ -382,43 +382,54 @@ O sistema de auditoria foi implementado para monitorar e registrar ações crít
 
 ---
 
-## Integração com Serviço Externo
+## Integrações com Serviços Externos e Protocolos
 
-O projeto se integra a dois serviços externos principais:
+O sistema HomeHub se integra aos seguintes serviços, APIs e protocolos externos:
 
 ### 1. Google OAuth2 (Google Identity Platform)
-- **Para que é usado:** Permitir que os usuários realizem cadastro e login na aplicação utilizando suas contas do Google de forma simplificada.
+- **Para que é usado:** Permitir que os usuários realizem cadastro e login na aplicação utilizando suas contas do Google de forma rápida e segura.
 - **Como é configurado:**
-  - Configurado no arquivo [application.yml](file:///src/main/resources/application.yml) sob as propriedades de `spring.security.oauth2.client`.
-  - As chaves de acesso são parametrizadas pelas variáveis de ambiente `${GOOGLE_CLIENT_ID}` e `${GOOGLE_CLIENT_SECRET}` no arquivo `.env` (em ambiente de desenvolvimento, utiliza valores dummy padrão para não impedir a inicialização).
+  - Configurado em [application.yml](file:///src/main/resources/application.yml) sob as propriedades `spring.security.oauth2.client`.
+  - As credenciais são parametrizadas no arquivo `.env` pelas variáveis `${GOOGLE_CLIENT_ID}` e `${GOOGLE_CLIENT_SECRET}`.
 - **Classes e arquivos participantes:**
-  - Configuração de Segurança: [SecurityConfig.java](file:///src/main/java/br/ufpb/dsc/republica/config/SecurityConfig.java) (habilita o oauth2Login)
-  - Manipulador de Sucesso: [CustomOAuth2SuccessHandler.java](file:///src/main/java/br/ufpb/dsc/republica/config/CustomOAuth2SuccessHandler.java) (intercepta a autenticação com sucesso, extrai e-mail e nome e redireciona o usuário para o dashboard)
-  - Cadastro de Usuário: [UsuarioService.java](file:///src/main/java/br/ufpb/dsc/republica/service/UsuarioService.java) (através do método `registrarOuObterUsuarioOAuth2` cria o usuário local com base nos dados externos)
+  - Configuração de Segurança: [SecurityConfig.java](file:///src/main/java/br/ufpb/dsc/republica/config/SecurityConfig.java) (habilita o `oauth2Login`).
+  - Manipulador de Sucesso: [CustomOAuth2SuccessHandler.java](file:///src/main/java/br/ufpb/dsc/republica/config/CustomOAuth2SuccessHandler.java) (captura a autenticação, extrai e-mail/nome e redireciona para a aplicação).
+  - Gestão do Usuário: [UsuarioService.java](file:///src/main/java/br/ufpb/dsc/republica/service/UsuarioService.java) (`registrarOuObterUsuarioOAuth2` cadastra o usuário com e-mail auto-confirmado).
 
-### 2. Gmail SMTP (Email Delivery Service)
-- **Para que é usado:** Enviar e-mails transacionais de confirmação de cadastro de conta para novos usuários registrados no sistema.
+### 2. Gmail SMTP / Java Mail (Email Delivery Service)
+- **Para que é usado:** Enviar e-mails transacionais em HTML para:
+  1. **Confirmação de Cadastro**: ativação de conta de novos usuários registrados via formulário.
+  2. **Redefinição de Senha ("Esqueceu sua senha?")**: envio de link seguro com token temporário (validade de 1 hora) para redefinição de credenciais de acesso.
 - **Como é configurado:**
-  - Configurado no arquivo [application.yml](file:///src/main/resources/application.yml) sob as propriedades de `spring.mail`.
-  - O e-mail de envio (`spring.mail.username`) e a senha de app do Gmail (`spring.mail.password`) são parametrizados no arquivo `.env` via variáveis de ambiente `${SPRING_MAIL_USERNAME}` e `${SPRING_MAIL_PASSWORD}`.
+  - Configurado em [application.yml](file:///src/main/resources/application.yml) sob as propriedades `spring.mail` (Host `smtp.gmail.com`, Porta 587, STARTTLS habilitado).
+  - O e-mail de remetente (`spring.mail.username`) e a senha de app (`spring.mail.password`) são parametrizados no arquivo `.env`.
+  - **Modo Desenvolvimento/Dev**: Se as credenciais de e-mail não forem fornecidas, o sistema simula o envio imprimindo os links de confirmação/redefinição diretamente no log da aplicação sem gerar erro.
 - **Classes e arquivos participantes:**
-  - Serviço de E-mail: [EmailService.java](file:///src/main/java/br/ufpb/dsc/republica/service/EmailService.java) (realiza o envio de e-mails em HTML via protocolo SMTP usando a classe `JavaMailSender`)
-  - Registro de Usuário: [UsuarioService.java](file:///src/main/java/br/ufpb/dsc/republica/service/UsuarioService.java) (gera o token UUID, salva com `emailConfirmado = false` e aciona o `EmailService`)
-  - Controller de Confirmação: [EmailConfirmacaoController.java](file:///src/main/java/br/ufpb/dsc/republica/controller/EmailConfirmacaoController.java) (provê o endpoint GET `/api/auth/confirmar-email?token=...` que valida o token e ativa o cadastro)
-  - Bloqueio de Login: [CustomUserDetailsService.java](file:///src/main/java/br/ufpb/dsc/republica/config/CustomUserDetailsService.java) (barra o login lançando `DisabledException` caso o e-mail não tenha sido verificado via token)
+  - Serviço de E-mail: [EmailService.java](file:///src/main/java/br/ufpb/dsc/republica/service/EmailService.java) (envio dos e-mails HTML via `JavaMailSender`).
+  - Lógica de Negócio: [UsuarioService.java](file:///src/main/java/br/ufpb/dsc/republica/service/UsuarioService.java) (geração do token UUID, envio e redefinição de senha criptografada via `BCryptPasswordEncoder`).
+  - Endpoints REST: [AuthController.java](file:///src/main/java/br/ufpb/dsc/republica/controller/AuthController.java) (`/api/auth/esqueceu-senha`, `/api/auth/validar-token-redefinicao`, `/api/auth/redefinir-senha`) e [EmailConfirmacaoController.java](file:///src/main/java/br/ufpb/dsc/republica/controller/EmailConfirmacaoController.java) (`/api/auth/confirmar-email`).
+  - DTOs Records: [EsqueceuSenhaForm.java](file:///src/main/java/br/ufpb/dsc/republica/dto/EsqueceuSenhaForm.java) e [RedefinirSenhaForm.java](file:///src/main/java/br/ufpb/dsc/republica/dto/RedefinirSenhaForm.java).
+  - Telas da Aplicação: [Login.tsx](file:///frontend/src/pages/Login.tsx), [EsqueceuSenha.tsx](file:///frontend/src/pages/EsqueceuSenha.tsx), [RedefinirSenha.tsx](file:///frontend/src/pages/RedefinirSenha.tsx) e [login.html](file:///src/main/resources/templates/auth/login.html).
 
-### 3. OpenAI LLM (Assistente de Inteligência Artificial do HomeHub)
-- **Para que é usado:** Permitir que o morador gerencie sua república conversando em linguagem natural (ex: pedir para lançar despesas, ratear contas, verificar saldo devedor em aberto e notificar moradores). A IA processa a solicitação e executa ações de forma automática e auditada por meio de ferramentas (tools) Java acopladas.
+### 3. OpenAI LLM (Assistente Virtual do HomeHub)
+- **Para que é usado:** Assistente interativo em linguagem natural que permite aos moradores realizarem lançamentos de despesas, divisão de rateios, verificação de saldos em aberto e envio de avisos.
 - **Como é configurado:**
-  - Configurado no arquivo [application.yml](file:///src/main/resources/application.yml) sob as propriedades de `spring.ai.openai`.
-  - A API Key (`spring.ai.openai.api-key`), URL Base (`spring.ai.openai.base-url`) e Modelo (`spring.ai.openai.chat.options.model`) são parametrizados no arquivo `.env` via variáveis `${SPRING_AI_OPENAI_API_KEY}`, `${SPRING_AI_OPENAI_BASE_URL}` e `${SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL}`.
+  - Configurado em [application.yml](file:///src/main/resources/application.yml) sob as propriedades `spring.ai.openai`.
+  - As chaves e modelos são fornecidos pelas variáveis `${SPRING_AI_OPENAI_API_KEY}`, `${SPRING_AI_OPENAI_BASE_URL}` e `${SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL}` no `.env`.
 - **Classes e arquivos participantes:**
-  - Classe de Ferramentas: [RepublicaTools.java](file:///src/main/java/br/ufpb/dsc/republica/service/RepublicaTools.java) (ferramentas anotadas com `@Tool` e recurso de extrato anotado com `@McpResource`).
-  - Bean de Configuração: [McpServerConfig.java](file:///src/main/java/br/ufpb/dsc/republica/config/McpServerConfig.java) (registra as ferramentas no ecossistema do Spring AI).
-  - Controller de Chat: [ChatController.java](file:///src/main/java/br/ufpb/dsc/republica/controller/ChatController.java) (provê a rota `/api/chat` usando o `ChatClient` com suporte a chamadas de função automáticas).
-  - Interface do Chatbot: [IaAssistant.tsx](file:///frontend/src/components/IaAssistant.tsx) (componente React flutuante premium no painel do usuário).
+  - Ferramentas Executáveis (Tools): [RepublicaTools.java](file:///src/main/java/br/ufpb/dsc/republica/service/RepublicaTools.java) (métodos anotados com `@Tool` e `@McpResource`).
+  - Configuração Spring AI: [McpServerConfig.java](file:///src/main/java/br/ufpb/dsc/republica/config/McpServerConfig.java).
+  - Controller do Chatbot: [ChatController.java](file:///src/main/java/br/ufpb/dsc/republica/controller/ChatController.java) (endpoint `/api/chat`).
+  - Interface do Usuário: [IaAssistant.tsx](file:///frontend/src/components/IaAssistant.tsx).
+
+### 4. OpenTelemetry (Observabilidade e Tracing Distribuído)
+- **Para que é usado:** Rastreamento de execução e monitoramento de desempenho em tempo real das chamadas transacionais e envio de e-mails via anotação `@WithSpan`.
+- **Como é configurado:** Dependências `opentelemetry-api` e `opentelemetry-instrumentation-annotations` em `pom.xml`.
+- **Classes e arquivos participantes:**
+  - Instrumentalização: [EmailService.java](file:///src/main/java/br/ufpb/dsc/republica/service/EmailService.java) (`@WithSpan("enviar-email-confirmacao")` e `@WithSpan("enviar-email-redefinicao-senha")`).
 
 ---
+
 
 ## Model Context Protocol (MCP)
 
