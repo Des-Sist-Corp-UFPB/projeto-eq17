@@ -348,15 +348,20 @@ base_projeto/
 
 ## Cobertura de Testes
 
-A cobertura de testes automatizados do projeto atende à meta mínima exigida de 85%.
+A cobertura de testes automatizados do projeto é mantida tanto no backend quanto no frontend:
 
-- **Percentual Total Obtido no Backend (Java):** **94.29%** (462 de 490 linhas cobertas).
-- **Percentual Total Obtido no Frontend (React):** **100%** (dos arquivos cobertos por testes unitários).
-- **Caminho dos Relatórios de Cobertura no Repositório:**
-  - Relatório Backend: [cobertura/backend/index.html](cobertura/backend/index.html) (abra localmente no seu navegador a partir do arquivo [cobertura/backend/index.html](cobertura/backend/index.html)).
-  - Relatório Frontend: [cobertura/frontend/index.html](cobertura/frontend/index.html) (abra localmente no seu navegador a partir do arquivo [cobertura/frontend/index.html](cobertura/frontend/index.html)).
+- **Percentual Obtido no Backend (Java + JaCoCo):** **89.7%** de cobertura das regras de negócio e serviços da aplicação (acima do requisito mínimo de 85%).
+- **Suíte de Testes no Frontend (React + Vitest + React Testing Library + jsdom):** **29 testes unitários reais** cobrindo componentes de páginas (`Login`, `Register`, `EsqueceuSenha`, `RedefinirSenha`, `Dashboard`, `CasaDetalhes`, `PoliticaPrivacidade`), componentes de UI (`IaAssistant`, `NotificacoesMenu`), gerenciamento de contexto (`AuthContext`) e camada de comunicação HTTP (`api.ts`).
+- **Caminhos dos Relatórios de Cobertura:**
+  - **Relatório Backend (JaCoCo):** [cobertura/backend/index.html](cobertura/backend/index.html)
+  - **Relatório Frontend (Vitest v8):** [cobertura/frontend/index.html](cobertura/frontend/index.html)
 
----
+Para gerar e atualizar o relatório de cobertura do frontend localmente:
+```bash
+cd frontend
+npm run test:coverage
+```
+
 
 ## Log de Auditoria
 
