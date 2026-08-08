@@ -48,6 +48,12 @@ public class Usuario {
     @Column(name = "token_confirmacao", length = 100)
     private String tokenConfirmacao;
 
+    @Column(name = "token_redefinicao_senha", length = 100)
+    private String tokenRedefinicaoSenha;
+
+    @Column(name = "validade_token_redefinicao")
+    private Instant validadeTokenRedefinicao;
+
     @PrePersist
     protected void prePersist() {
         this.criadoEm = Instant.now();
@@ -140,6 +146,22 @@ public class Usuario {
 
     public void setTokenConfirmacao(String tokenConfirmacao) {
         this.tokenConfirmacao = tokenConfirmacao;
+    }
+
+    public String getTokenRedefinicaoSenha() {
+        return tokenRedefinicaoSenha;
+    }
+
+    public void setTokenRedefinicaoSenha(String tokenRedefinicaoSenha) {
+        this.tokenRedefinicaoSenha = tokenRedefinicaoSenha;
+    }
+
+    public Instant getValidadeTokenRedefinicao() {
+        return validadeTokenRedefinicao;
+    }
+
+    public void setValidadeTokenRedefinicao(Instant validadeTokenRedefinicao) {
+        this.validadeTokenRedefinicao = validadeTokenRedefinicao;
     }
 
     @Override
