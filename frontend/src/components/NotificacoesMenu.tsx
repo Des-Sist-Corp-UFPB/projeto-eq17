@@ -41,7 +41,7 @@ export default function NotificacoesMenu() {
       setNotificacoes(list);
       
       const countRes = await api.get<{ count: number }>('/api/notificacoes/nao-lidas/count');
-      setNaoLidasCount(countRes.count);
+      setNaoLidasCount(countRes?.count ?? 0);
     } catch (err) {
       console.error('Erro ao carregar notificações', err);
     }

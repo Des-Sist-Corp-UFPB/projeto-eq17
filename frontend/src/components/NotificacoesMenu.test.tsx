@@ -26,7 +26,12 @@ describe('NotificacoesMenu Component', () => {
       },
     ];
 
-    vi.mocked(api.get).mockResolvedValueOnce(mockNotificacoes);
+    vi.mocked(api.get).mockImplementation((url) => {
+      if (url === '/api/notificacoes/nao-lidas/count') {
+        return Promise.resolve({ count: 1 });
+      }
+      return Promise.resolve(mockNotificacoes);
+    });
 
     render(<NotificacoesMenu />);
 

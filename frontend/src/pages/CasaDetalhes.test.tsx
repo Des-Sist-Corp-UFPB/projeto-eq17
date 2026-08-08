@@ -50,6 +50,9 @@ describe('CasaDetalhes Component', () => {
       if (url.includes('/api/casas/1')) {
         return Promise.resolve(mockCasaData);
       }
+      if (url === '/api/notificacoes/nao-lidas/count') {
+        return Promise.resolve({ count: 0 });
+      }
       if (url === '/api/notificacoes') {
         return Promise.resolve([]);
       }
