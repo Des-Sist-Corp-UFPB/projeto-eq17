@@ -433,6 +433,18 @@ O sistema HomeHub se integra aos seguintes serviços, APIs e protocolos externos
 - **Classes e arquivos participantes:**
   - Instrumentalização: [EmailService.java](file:///src/main/java/br/ufpb/dsc/republica/service/EmailService.java) (`@WithSpan("enviar-email-confirmacao")` e `@WithSpan("enviar-email-redefinicao-senha")`).
 
+### 5. Umami Analytics (Métricas de Acesso e Telemetria Web)
+- **Para que é usado:** Monitoramento de tráfego de usuários, visualizações de páginas, dispositivos e retenção em tempo real com preservação de privacidade (sem cookies invasivos, em total conformidade com a LGPD).
+- **Como é configurado:**
+  - Script assíncrono injetado no cabeçalho `<head>` da aplicação:
+    ```html
+    <script defer src="https://umami.dsc.rodrigor.com/script.js" data-website-id="d47e0ad7-c026-4d14-a2fb-2ba04c79e6dc"></script>
+    ```
+  - Painel de monitoramento e métricas em tempo real: `https://umami.dsc.rodrigor.com`
+- **Arquivos participantes:**
+  - Aplicação SPA React: [index.html](file:///frontend/index.html)
+  - Templates do Servidor (Thymeleaf): [layout.html](file:///src/main/resources/templates/layout.html), [login.html](file:///src/main/resources/templates/auth/login.html) e [cadastro.html](file:///src/main/resources/templates/auth/cadastro.html)
+
 ---
 
 

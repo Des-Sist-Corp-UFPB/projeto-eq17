@@ -162,6 +162,11 @@ A imagem abaixo exibe a gaveta lateral de detalhes do span no Grafana, expondo n
 
 ![Atributos customizados injetados no span visíveis no Grafana](otel_evidencia/otel_6_atributos.png)
 
+### G. Telemetria de Tráfego Web (Umami Analytics)
+Para monitoramento de comportamento do usuário e engajamento em tempo real sem comprometer a privacidade (em conformidade com a LGPD e sem cookies de terceiros), integramos a plataforma **Umami Analytics**:
+* **Script de Coleta**: Inserido de forma assíncrona (`defer`) no `<head>` da SPA React e dos templates do servidor.
+* **Painel Centralizado**: Métricas de páginas mais visitadas, retenção e dispositivos acessíveis pelo painel `https://umami.dsc.rodrigor.com` sob a conta da equipe `dsc-eq17`.
+
 ---
 
 ## 6. Qualidade de Código, Segurança (SAST) & DevOps
