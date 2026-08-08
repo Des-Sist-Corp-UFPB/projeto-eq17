@@ -39,13 +39,6 @@ public class UploadStorageService {
             throw new IllegalArgumentException("O arquivo de comprovante não pode ser vazio.");
         }
 
-        // Simulando gargalo lento para exercício de diagnóstico (será removido posteriormente)
-        try {
-            Thread.sleep(1500);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
         String contentType = arquivo.getContentType();
         if (contentType == null || (!contentType.equals("image/png") && 
                                      !contentType.equals("image/jpeg") && 
