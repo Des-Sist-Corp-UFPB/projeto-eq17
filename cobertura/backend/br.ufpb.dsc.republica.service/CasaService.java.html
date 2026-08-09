@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CasaService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">republicas</a> &gt; <a href="index.source.html" class="el_package">br.ufpb.dsc.republica.service</a> &gt; <span class="el_source">CasaService.java</span></div><h1>CasaService.java</h1><pre class="source lang-java linenums">package br.ufpb.dsc.republica.service;
+
+import br.ufpb.dsc.republica.domain.Casa;
+import br.ufpb.dsc.republica.domain.Morador;
+import br.ufpb.dsc.republica.domain.PapelMorador;
+import br.ufpb.dsc.republica.domain.Usuario;
+import br.ufpb.dsc.republica.dto.CasaForm;
+import br.ufpb.dsc.republica.repository.CasaRepository;
+import br.ufpb.dsc.republica.repository.MoradorRepository;
+import br.ufpb.dsc.republica.repository.UsuarioRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@Transactional
+public class CasaService {
+
+    private final CasaRepository casaRepository;
+    private final MoradorRepository moradorRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final AuditoriaService auditoriaService;
+
+    public CasaService(CasaRepository casaRepository, 
+                       MoradorRepository moradorRepository, 
+                       UsuarioRepository usuarioRepository,
+<span class="fc" id="L28">                       AuditoriaService auditoriaService) {</span>
+<span class="fc" id="L29">        this.casaRepository = casaRepository;</span>
+<span class="fc" id="L30">        this.moradorRepository = moradorRepository;</span>
+<span class="fc" id="L31">        this.usuarioRepository = usuarioRepository;</span>
+<span class="fc" id="L32">        this.auditoriaService = auditoriaService;</span>
+<span class="fc" id="L33">    }</span>
+
+    @Transactional(readOnly = true)
+    public List&lt;Casa&gt; buscarCasasPorUsuario(Long usuarioId) {
+<span class="fc" id="L37">        return casaRepository.findCasasByUsuarioId(usuarioId);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Casa buscarPorId(Long id) {
+<span class="fc" id="L42">        return casaRepository.findById(id)</span>
+<span class="fc" id="L43">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Casa não encontrada com o ID: &quot; + id));</span>
+    }
+
+    public Casa criarCasa(CasaForm form, String emailCriador) {
+<span class="fc" id="L47">        Usuario criador = usuarioRepository.findByEmail(emailCriador)</span>
+<span class="fc" id="L48">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Usuário criador não encontrado.&quot;));</span>
+
+<span class="fc" id="L50">        Casa novaCasa = new Casa(form.nome(), form.endereco());</span>
+<span class="fc" id="L51">        novaCasa = casaRepository.save(novaCasa);</span>
+
+        // O criador é automaticamente associado como ADMINISTRADOR
+<span class="fc" id="L54">        Morador admin = new Morador(criador, novaCasa, PapelMorador.ADMINISTRADOR);</span>
+<span class="fc" id="L55">        moradorRepository.save(admin);</span>
+
+        // Auditoria: Criação da Casa
+<span class="fc" id="L58">        auditoriaService.registrar(criador, &quot;CRIACAO_CASA&quot;, </span>
+<span class="fc" id="L59">                String.format(&quot;Criou a república '%s' no endereço '%s'.&quot;, novaCasa.getNome(), novaCasa.getEndereco()), </span>
+<span class="fc" id="L60">                &quot;Casa&quot;, novaCasa.getId());</span>
+
+<span class="fc" id="L62">        return novaCasa;</span>
+    }
+
+    public Morador adicionarMorador(Long casaId, String emailMorador) {
+<span class="fc" id="L66">        Casa casa = buscarPorId(casaId);</span>
+<span class="fc" id="L67">        Usuario usuario = usuarioRepository.findByEmail(emailMorador)</span>
+<span class="pc" id="L68">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Nenhum usuário cadastrado com o e-mail: &quot; + emailMorador));</span>
+
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (moradorRepository.existsByCasaIdAndUsuarioId(casaId, usuario.getId())) {</span>
+<span class="nc" id="L71">            throw new IllegalArgumentException(&quot;Este usuário já é morador desta casa.&quot;);</span>
+        }
+
+<span class="fc" id="L74">        Morador morador = new Morador(usuario, casa, PapelMorador.MORADOR);</span>
+<span class="fc" id="L75">        Morador moradorSalvo = moradorRepository.save(morador);</span>
+
+        // Auditoria: Entrada de moradores
+<span class="fc" id="L78">        auditoriaService.registrarAcaoUsuarioLogado(&quot;ENTRADA_MORADORES&quot;, </span>
+<span class="fc" id="L79">                String.format(&quot;Adicionou o morador '%s' (%s) à república '%s'.&quot;, usuario.getNome(), usuario.getEmail(), casa.getNome()), </span>
+<span class="fc" id="L80">                &quot;Morador&quot;, moradorSalvo.getId());</span>
+
+<span class="fc" id="L82">        return moradorSalvo;</span>
+    }
+
+    @Transactional(readOnly = true)
+    public List&lt;Morador&gt; buscarMoradores(Long casaId) {
+<span class="fc" id="L87">        return moradorRepository.findByCasaId(casaId);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Morador buscarMoradorPorUsuarioECasa(Long casaId, Long usuarioId) {
+<span class="fc" id="L92">        return moradorRepository.findByCasaIdAndUsuarioId(casaId, usuarioId)</span>
+<span class="pc" id="L93">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Usuário não é morador desta casa.&quot;));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

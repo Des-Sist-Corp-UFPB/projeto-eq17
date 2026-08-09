@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/mercado_dev
-    username: mercado
-    password: mercado123
+    url: jdbc:postgresql://localhost:5432/republicas_dev
+    username: republicas
+    password: republicas123
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -21,5 +21,10 @@ spring:
 
 logging:
   level:
-    br.ufpb.dsc.mercado: DEBUG
+    br.ufpb.dsc.republica: DEBUG
     org.springframework.web: DEBUG
+
+app:
+  url: ${APP_URL:http://localhost:8080}
+
+

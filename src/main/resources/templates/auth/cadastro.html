@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Cadastro — HomeHub</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/css/bootstrap.min.css}"/>
+    <!-- Umami Analytics -->
+    <script defer src="https://umami.dsc.rodrigor.com/script.js" data-website-id="d47e0ad7-c026-4d14-a2fb-2ba04c79e6dc"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0d1b2a 0%, #1a237e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .register-card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.15);
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 460px;
+            padding: 2.5rem;
+        }
+
+        .brand-logo {
+            color: #1a237e;
+            font-weight: 800;
+            font-size: 1.85rem;
+            letter-spacing: -0.8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-primary {
+            background-color: #1a237e;
+            border-color: #1a237e;
+            font-weight: 600;
+            padding: 0.8rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #0d1b2a !important;
+            border-color: #0d1b2a !important;
+        }
+
+        .form-control {
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+        }
+        .form-control:focus {
+            border-color: #1a237e;
+            box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.15);
+        }
+
+        .login-link {
+            color: #1a237e;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .login-link:hover {
+            text-decoration: underline;
+        }
+        .error-message {
+            font-size: 0.775rem;
+            color: #dc3545;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="register-card">
+    <div class="brand-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" 
+             class="bi bi-houses-fill me-2" viewBox="0 0 16 16">
+            <path d="M7.207 1a1 1 0 0 0-1.414 0L.146 5.646a.5.5 0 0 0 .708.708L1 5.829V13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5V5.83l.146.124a.5.5 0 0 0 .708-.708L11.793 1zM2 4.77l4-3.333 4 3.333v8.73h-8V4.77z"/>
+        </svg>
+        HomeHub
+    </div>
+
+    <h4 class="text-center mb-4 fw-bold text-dark">Criar nova conta</h4>
+
+    <!-- Erros globais do fluxo -->
+    <div class="alert alert-danger py-2 small" role="alert" th:if="${cadastroErro}">
+        <span th:text="${cadastroErro}">Erro ao cadastrar</span>
+    </div>
+
+    <!-- Formulário -->
+    <form th:action="@{/cadastro}" th:object="${usuarioForm}" method="post">
+        
+        <div class="mb-3">
+            <label for="nome" class="form-label small fw-semibold text-secondary">Nome Completo</label>
+            <input type="text" class="form-control" id="nome" th:field="*{nome}" 
+                   placeholder="Digite seu nome" required/>
+            <div class="error-message" th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}">Erro nome</div>
+        </div>
+
+        <div class="mb-3">
+            <label for="email" class="form-label small fw-semibold text-secondary">E-mail</label>
+            <input type="email" class="form-control" id="email" th:field="*{email}" 
+                   placeholder="exemplo@email.com" required/>
+            <div class="error-message" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">Erro email</div>
+        </div>
+
+        <div class="mb-4">
+            <label for="senha" class="form-label small fw-semibold text-secondary">Senha (mínimo 6 caracteres)</label>
+            <input type="password" class="form-control" id="senha" th:field="*{senha}" 
+                   placeholder="Escolha uma senha forte" required/>
+            <div class="error-message" th:if="${#fields.hasErrors('senha')}" th:errors="*{senha}">Erro senha</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 mb-3">Registrar-se</button>
+    </form>
+
+    <div class="text-center mt-3 small text-muted">
+        Já possui conta? <a th:href="@{/login}" class="login-link">Fazer login</a>
+    </div>
+</div>
+
+</body>
+</html>

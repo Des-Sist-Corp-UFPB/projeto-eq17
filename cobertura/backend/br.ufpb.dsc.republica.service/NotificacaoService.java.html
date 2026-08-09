@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotificacaoService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">republicas</a> &gt; <a href="index.source.html" class="el_package">br.ufpb.dsc.republica.service</a> &gt; <span class="el_source">NotificacaoService.java</span></div><h1>NotificacaoService.java</h1><pre class="source lang-java linenums">package br.ufpb.dsc.republica.service;
+
+import br.ufpb.dsc.republica.domain.*;
+import br.ufpb.dsc.republica.repository.DespesaRepository;
+import br.ufpb.dsc.republica.repository.NotificacaoRepository;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Service
+@Transactional
+public class NotificacaoService {
+
+    private final NotificacaoRepository notificacaoRepository;
+    private final DespesaRepository despesaRepository;
+
+<span class="fc" id="L20">    public NotificacaoService(NotificacaoRepository notificacaoRepository, DespesaRepository despesaRepository) {</span>
+<span class="fc" id="L21">        this.notificacaoRepository = notificacaoRepository;</span>
+<span class="fc" id="L22">        this.despesaRepository = despesaRepository;</span>
+<span class="fc" id="L23">    }</span>
+
+    /**
+     * Cria e salva uma nova notificação para um usuário.
+     */
+    public Notificacao criarNotificacao(Usuario usuario, String titulo, String mensagem, TipoNotificacao tipo) {
+<span class="fc" id="L29">        Notificacao notificacao = new Notificacao(usuario, titulo, mensagem, tipo);</span>
+<span class="fc" id="L30">        return notificacaoRepository.save(notificacao);</span>
+    }
+
+    /**
+     * Retorna todas as notificações de um usuário ordenadas pela data de criação.
+     */
+    @Transactional(readOnly = true)
+    public List&lt;Notificacao&gt; buscarNotificacoesDoUsuario(Long usuarioId) {
+<span class="fc" id="L38">        return notificacaoRepository.findByUsuarioIdOrderByCriadoEmDesc(usuarioId);</span>
+    }
+
+    /**
+     * Conta a quantidade de notificações não lidas de um usuário.
+     */
+    @Transactional(readOnly = true)
+    public long contarNaoLidas(Long usuarioId) {
+<span class="fc" id="L46">        return notificacaoRepository.countByUsuarioIdAndLidaFalse(usuarioId);</span>
+    }
+
+    /**
+     * Marca uma notificação específica como lida se ela pertencer ao usuário.
+     */
+    public void marcarComoLida(Long notificacaoId, Long usuarioId) {
+<span class="fc" id="L53">        Notificacao notificacao = notificacaoRepository.findById(notificacaoId)</span>
+<span class="fc" id="L54">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Notificação não encontrada.&quot;));</span>
+
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (!notificacao.getUsuario().getId().equals(usuarioId)) {</span>
+<span class="fc" id="L57">            throw new IllegalArgumentException(&quot;Esta notificação não pertence ao usuário.&quot;);</span>
+        }
+
+<span class="fc" id="L60">        notificacao.setLida(true);</span>
+<span class="fc" id="L61">        notificacaoRepository.save(notificacao);</span>
+<span class="fc" id="L62">    }</span>
+
+    /**
+     * Marca todas as notificações do usuário como lidas.
+     */
+    public void marcarTodasComoLidas(Long usuarioId) {
+<span class="fc" id="L68">        notificacaoRepository.marcarTodasComoLidas(usuarioId);</span>
+<span class="fc" id="L69">    }</span>
+
+    /**
+     * Agendamento: Roda todos os dias às 8:00h da manhã buscando despesas não pagas
+     * que vencem no dia seguinte (amanhã) e gera notificações para os moradores.
+     * Cron: &quot;0 0 8 * * ?&quot; (Às 8:00h AM diariamente)
+     */
+    @Scheduled(cron = &quot;0 0 8 * * ?&quot;)
+    public void enviarNotificacoesVencimento() {
+<span class="fc" id="L78">        LocalDate amanha = LocalDate.now().plusDays(1);</span>
+<span class="fc" id="L79">        List&lt;Despesa&gt; despesasAmanha = despesaRepository.findByExcluidoFalseAndStatusNotAndVencimento(StatusDespesa.PAGA, amanha);</span>
+
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (Despesa despesa : despesasAmanha) {</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            for (DespesaRateio rateio : despesa.getRateios()) {</span>
+                // Se o pagamento do rateio ainda não foi confirmado
+<span class="fc" id="L84">                boolean pago = rateio.getPagamentos().stream()</span>
+<span class="pc bnc" id="L85" title="All 2 branches missed.">                        .anyMatch(p -&gt; p.getStatus() == StatusPagamento.CONFIRMADO);</span>
+
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">                if (!pago) {</span>
+<span class="fc" id="L88">                    Usuario usuario = rateio.getMorador().getUsuario();</span>
+<span class="fc" id="L89">                    String titulo = &quot;Despesa vencendo amanhã!&quot;;</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">                    String pixMsg = despesa.getChavePix() != null ? &quot; (PIX para pagamento: &quot; + despesa.getChavePix() + &quot;)&quot; : &quot;&quot;;</span>
+<span class="fc" id="L91">                    String mensagem = String.format(&quot;A despesa '%s' vence amanhã (%s). Sua parte devida é R$ %.2f%s.&quot;,</span>
+<span class="fc" id="L92">                            despesa.getDescricao(),</span>
+<span class="fc" id="L93">                            despesa.getVencimento(),</span>
+<span class="fc" id="L94">                            rateio.getValorDevido(),</span>
+                            pixMsg
+                    );
+                    
+<span class="fc" id="L98">                    criarNotificacao(usuario, titulo, mensagem, TipoNotificacao.VENCIMENTO_PROXIMO);</span>
+                }
+<span class="fc" id="L100">            }</span>
+<span class="fc" id="L101">        }</span>
+<span class="fc" id="L102">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

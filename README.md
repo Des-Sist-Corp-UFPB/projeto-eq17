@@ -1,10 +1,14 @@
-# Sistema Mercado — Projeto Base DSC/UFPB
+# HomeHub — Sistema de Gestão de Repúblicas Universitárias
 
 Projeto base (boilerplate) para a disciplina **Desenvolvimento de Sistemas Corporativos**.
 
 **Professor**: Rodrigo Rebouças | **UFPB — Campus IV**
 
 ---
+**Nome:** Ramon Alves da Silva
+**Github:** GimiliOgrande
+
+**Vídeo de apresentação:** https://youtu.be/eQPLA5ivXKE
 
 ## Tecnologias
 
@@ -108,12 +112,12 @@ Você tem duas opções. **Recomendamos a Opção A para a primeira execução.*
 Um único comando sobe o banco, a aplicação e o Adminer (interface web do banco):
 
 ```bash
-docker compose -f docker/docker-compose.dev.yml up --build
+
 ```
 
 Aguarde as mensagens de inicialização. Quando aparecer algo como:
 ```
-Started MercadoApplication in X.XXX seconds
+Started RepublicaApplication in X.XXX seconds
 ```
 ...a aplicação está pronta.
 
@@ -127,7 +131,7 @@ docker compose -f docker/docker-compose.dev.yml up postgres adminer
 
 # Terminal 2 — roda a aplicação (em outro terminal, na mesma pasta)
 mvn spring-boot:run
-```
+``` 
 
 ---
 
@@ -174,7 +178,7 @@ O Docker Desktop não está em execução. Abra o aplicativo Docker Desktop e ag
 O container do PostgreSQL ainda não subiu. Aguarde alguns segundos e tente novamente. Você pode verificar com:
 ```bash
 docker compose -f docker/docker-compose.dev.yml ps
-# O container "mercado-postgres-dev" deve estar com status "healthy"
+# O container "republicas-postgres-dev" deve estar com status "healthy"
 ```
 
 ### Erro de compilação Java
@@ -232,15 +236,15 @@ O projeto inclui um pipeline de CI/CD em `.github/workflows/deploy.yml` que:
 - constrói a imagem Docker de produção e faz o deploy no servidor da disciplina
 
 Para ativar o deploy, você precisa configurar **dois secrets** e uma **variável** no seu repositório GitHub.
-
+ 
 ---
-
+ 
 ### Secret 1 — Chave SSH de deploy (`SSH_DEPLOY_KEY`)
 
 O servidor da disciplina (`dsc.rodrigor.com`) já está preparado para receber deploys.
 A chave SSH que autoriza o acesso está disponível na página da disciplina:
 
-**Acesse: https://gd.dsc.rodrigor.com** e copie a chave SSH privada disponibilizada pelo professor.
+**Acesse: https://gd.dsc.rodrigor.com** e copie a chave SSH privada disponibilizada pelo professor. 
 
 Depois, adicione no seu repositório:
 
@@ -313,7 +317,7 @@ Se alguma etapa falhar, clique nela para ver os logs detalhados.
 base_projeto/
 ├── .github/workflows/
 │   └── deploy.yml           # Pipeline CI/CD (GitHub Actions)
-├── src/main/java/br/ufpb/dsc/mercado/
+├── src/main/java/br/ufpb/dsc/republica/
 │   ├── config/              # Configurações (Security, GlobalModelAttributes, etc.)
 │   ├── controller/          # Controllers HTTP + HTMX
 │   ├── domain/              # Entidades JPA
@@ -341,3 +345,121 @@ base_projeto/
 5. **Nunca editar** migrations já aplicadas — sempre criar uma nova (`V3__`, `V4__`, ...)
 
 > Dúvidas? Consulte a documentação em `docs/` ou o professor.
+
+---
+
+## Cobertura de Testes
+
+A cobertura de testes automatizados do projeto é mantida tanto no backend quanto no frontend:
+
+- **Percentual Obtido no Backend (Java + JaCoCo):** **89.7%** de cobertura das regras de negócio e serviços da aplicação (acima do requisito mínimo de 85%).
+- **Suíte de Testes no Frontend (React + Vitest + React Testing Library + jsdom):** **29 testes unitários reais** cobrindo componentes de páginas (`Login`, `Register`, `EsqueceuSenha`, `RedefinirSenha`, `Dashboard`, `CasaDetalhes`, `PoliticaPrivacidade`), componentes de UI (`IaAssistant`, `NotificacoesMenu`), gerenciamento de contexto (`AuthContext`) e camada de comunicação HTTP (`api.ts`).
+- **Caminhos dos Relatórios de Cobertura:**
+  - **Relatório Backend (JaCoCo):** [cobertura/backend/index.html](cobertura/backend/index.html)
+  - **Relatório Frontend (Vitest v8):** [cobertura/frontend/index.html](cobertura/frontend/index.html)
+
+Para gerar e atualizar o relatório de cobertura do frontend localmente:
+```bash
+cd frontend
+npm run test:coverage
+```
+
+
+## Log de Auditoria
+
+O sistema de auditoria foi implementado para monitorar e registrar ações críticas executadas pelos usuários nas entidades do sistema.
+
+- **O que é auditado (Ações do Usuário):**
+  - Autenticação: Login bem-sucedido (`LOGIN`) e falhas de login (`LOGIN_FALHA`).
+  - República/Casa: Criação de república (`CRIACAO_CASA`), alteração e remoção.
+  - Morador: Adição e exclusão de moradores das repúblicas.
+  - Tarefa: Criação, alteração de status e exclusão de tarefas de moradores.
+  - Despesa: Criação, alteração, exclusão e registro de pagamento de despesas.
+- **Onde fica armazenado:**
+  - Armazenado na tabela `auditoria` no banco de dados PostgreSQL.
+  - Principais campos: `id`, `usuario_id` (usuário que realizou a ação), `acao` (tipo do evento), `descricao` (detalhamento legível por humanos da alteração), `ip` (endereço IP de onde partiu a requisição), `entidade_afetada` (tabela/classe modificada), `entidade_id` (chave primária da entidade afetada) e `data_hora` (timestamp do evento).
+- **Como foi implementado:**
+  - **Intercepção de Login:** Implementado através do event listener [AuthenticationEventListener](file:///src/main/java/br/ufpb/dsc/republica/config/AuthenticationEventListener.java) que captura eventos disparados pelo Spring Security (`AuthenticationSuccessEvent` e `AbstractAuthenticationFailureEvent`).
+  - **Ações de Negócio:** Centralizado no [AuditoriaService](file:///src/main/java/br/ufpb/dsc/republica/service/AuditoriaService.java) e injetado diretamente nos serviços correspondentes (`CasaService`, `DespesaService`, `TarefaService`, etc.) dentro de métodos de alteração sob transações.
+- **Classes e arquivos participantes:**
+  - Entidade JPA: [Auditoria.java](file:///src/main/java/br/ufpb/dsc/republica/domain/Auditoria.java)
+  - Repositório Spring Data: [AuditoriaRepository.java](file:///src/main/java/br/ufpb/dsc/republica/repository/AuditoriaRepository.java)
+  - Serviço de Auditoria: [AuditoriaService.java](file:///src/main/java/br/ufpb/dsc/republica/service/AuditoriaService.java)
+  - Event Listener: [AuthenticationEventListener.java](file:///src/main/java/br/ufpb/dsc/republica/config/AuthenticationEventListener.java)
+
+---
+
+## Integrações com Serviços Externos e Protocolos
+
+O sistema HomeHub se integra aos seguintes serviços, APIs e protocolos externos:
+
+### 1. Google OAuth2 (Google Identity Platform)
+- **Para que é usado:** Permitir que os usuários realizem cadastro e login na aplicação utilizando suas contas do Google de forma rápida e segura.
+- **Como é configurado:**
+  - Configurado em [application.yml](file:///src/main/resources/application.yml) sob as propriedades `spring.security.oauth2.client`.
+  - As credenciais são parametrizadas no arquivo `.env` pelas variáveis `${GOOGLE_CLIENT_ID}` e `${GOOGLE_CLIENT_SECRET}`.
+- **Classes e arquivos participantes:**
+  - Configuração de Segurança: [SecurityConfig.java](file:///src/main/java/br/ufpb/dsc/republica/config/SecurityConfig.java) (habilita o `oauth2Login`).
+  - Manipulador de Sucesso: [CustomOAuth2SuccessHandler.java](file:///src/main/java/br/ufpb/dsc/republica/config/CustomOAuth2SuccessHandler.java) (captura a autenticação, extrai e-mail/nome e redireciona para a aplicação).
+  - Gestão do Usuário: [UsuarioService.java](file:///src/main/java/br/ufpb/dsc/republica/service/UsuarioService.java) (`registrarOuObterUsuarioOAuth2` cadastra o usuário com e-mail auto-confirmado).
+
+### 2. Gmail SMTP / Java Mail (Email Delivery Service)
+- **Para que é usado:** Enviar e-mails transacionais em HTML para:
+  1. **Confirmação de Cadastro**: ativação de conta de novos usuários registrados via formulário.
+  2. **Redefinição de Senha ("Esqueceu sua senha?")**: envio de link seguro com token temporário (validade de 1 hora) para redefinição de credenciais de acesso.
+- **Como é configurado:**
+  - Configurado em [application.yml](file:///src/main/resources/application.yml) sob as propriedades `spring.mail` (Host `smtp.gmail.com`, Porta 587, STARTTLS habilitado).
+  - O e-mail de remetente (`spring.mail.username`) e a senha de app (`spring.mail.password`) são parametrizados no arquivo `.env`.
+  - **Modo Desenvolvimento/Dev**: Se as credenciais de e-mail não forem fornecidas, o sistema simula o envio imprimindo os links de confirmação/redefinição diretamente no log da aplicação sem gerar erro.
+- **Classes e arquivos participantes:**
+  - Serviço de E-mail: [EmailService.java](file:///src/main/java/br/ufpb/dsc/republica/service/EmailService.java) (envio dos e-mails HTML via `JavaMailSender`).
+  - Lógica de Negócio: [UsuarioService.java](file:///src/main/java/br/ufpb/dsc/republica/service/UsuarioService.java) (geração do token UUID, envio e redefinição de senha criptografada via `BCryptPasswordEncoder`).
+  - Endpoints REST: [AuthController.java](file:///src/main/java/br/ufpb/dsc/republica/controller/AuthController.java) (`/api/auth/esqueceu-senha`, `/api/auth/validar-token-redefinicao`, `/api/auth/redefinir-senha`) e [EmailConfirmacaoController.java](file:///src/main/java/br/ufpb/dsc/republica/controller/EmailConfirmacaoController.java) (`/api/auth/confirmar-email`).
+  - DTOs Records: [EsqueceuSenhaForm.java](file:///src/main/java/br/ufpb/dsc/republica/dto/EsqueceuSenhaForm.java) e [RedefinirSenhaForm.java](file:///src/main/java/br/ufpb/dsc/republica/dto/RedefinirSenhaForm.java).
+  - Telas da Aplicação: [Login.tsx](file:///frontend/src/pages/Login.tsx), [EsqueceuSenha.tsx](file:///frontend/src/pages/EsqueceuSenha.tsx), [RedefinirSenha.tsx](file:///frontend/src/pages/RedefinirSenha.tsx) e [login.html](file:///src/main/resources/templates/auth/login.html).
+
+### 3. OpenAI LLM (Assistente Virtual do HomeHub)
+- **Para que é usado:** Assistente interativo em linguagem natural que permite aos moradores realizarem lançamentos de despesas, divisão de rateios, verificação de saldos em aberto e envio de avisos.
+- **Como é configurado:**
+  - Configurado em [application.yml](file:///src/main/resources/application.yml) sob as propriedades `spring.ai.openai`.
+  - As chaves e modelos são fornecidos pelas variáveis `${SPRING_AI_OPENAI_API_KEY}`, `${SPRING_AI_OPENAI_BASE_URL}` e `${SPRING_AI_OPENAI_CHAT_OPTIONS_MODEL}` no `.env`.
+- **Classes e arquivos participantes:**
+  - Ferramentas Executáveis (Tools): [RepublicaTools.java](file:///src/main/java/br/ufpb/dsc/republica/service/RepublicaTools.java) (métodos anotados com `@Tool` e `@McpResource`).
+  - Configuração Spring AI: [McpServerConfig.java](file:///src/main/java/br/ufpb/dsc/republica/config/McpServerConfig.java).
+  - Controller do Chatbot: [ChatController.java](file:///src/main/java/br/ufpb/dsc/republica/controller/ChatController.java) (endpoint `/api/chat`).
+  - Interface do Usuário: [IaAssistant.tsx](file:///frontend/src/components/IaAssistant.tsx).
+
+### 4. OpenTelemetry (Observabilidade e Tracing Distribuído)
+- **Para que é usado:** Rastreamento de execução e monitoramento de desempenho em tempo real das chamadas transacionais e envio de e-mails via anotação `@WithSpan`.
+- **Como é configurado:** Dependências `opentelemetry-api` e `opentelemetry-instrumentation-annotations` em `pom.xml`.
+- **Classes e arquivos participantes:**
+  - Instrumentalização: [EmailService.java](file:///src/main/java/br/ufpb/dsc/republica/service/EmailService.java) (`@WithSpan("enviar-email-confirmacao")` e `@WithSpan("enviar-email-redefinicao-senha")`).
+
+### 5. Umami Analytics (Métricas de Acesso e Telemetria Web)
+- **Para que é usado:** Monitoramento de tráfego de usuários, visualizações de páginas, dispositivos e retenção em tempo real com preservação de privacidade (sem cookies invasivos, em total conformidade com a LGPD).
+- **Como é configurado:**
+  - Script assíncrono injetado no cabeçalho `<head>` da aplicação:
+    ```html
+    <script defer src="https://umami.dsc.rodrigor.com/script.js" data-website-id="d47e0ad7-c026-4d14-a2fb-2ba04c79e6dc"></script>
+    ```
+  - Painel de monitoramento e métricas em tempo real: `https://umami.dsc.rodrigor.com`
+- **Arquivos participantes:**
+  - Aplicação SPA React: [index.html](file:///frontend/index.html)
+  - Templates do Servidor (Thymeleaf): [layout.html](file:///src/main/resources/templates/layout.html), [login.html](file:///src/main/resources/templates/auth/login.html) e [cadastro.html](file:///src/main/resources/templates/auth/cadastro.html)
+
+---
+
+
+## Model Context Protocol (MCP)
+
+O sistema HomeHub atua como um **servidor MCP (Model Context Protocol)** completo, permitindo que assistentes externos de IA compatíveis (como Cursor IDE, Claude Desktop, Copilot etc.) interajam de forma segura com as informações da república.
+
+- **Endpoint SSE**: O servidor MCP expõe as ferramentas HTTP no endpoint `/mcp/messages`.
+- **Recursos Expostos**: O extrato financeiro completo da casa é exposto como um recurso somente leitura no formato de URI template `republica://casa/{casaId}/extrato`.
+- **Ferramentas Disponíveis**:
+  - `registrar_despesa(casaId, descricao, valorTotal, vencimento, responsavelId, tipo, chavePix, usuarioEmail)` — lança e rateia uma despesa.
+  - `dividir_despesas(casaId, mes, usuarioEmail)` — retorna o rateio de despesas do mês especificado.
+  - `saldo_morador(moradorId, nomeMorador, emailMorador)` — calcula quanto o morador deve em aberto.
+  - `notificar_moradores(casaId, titulo, mensagem, usuarioEmail)` — envia um aviso geral de morador.
+- **Segurança e Log de Auditoria**: Qualquer chamada que altere o banco de dados (como registro de despesas ou envio de notificações) exige o e-mail do operador (`usuarioEmail`) e grava automaticamente no log de auditoria do sistema em conformidade com as regras de conformidade e segurança da disciplina.
+

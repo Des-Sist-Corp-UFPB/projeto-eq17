@@ -28,7 +28,8 @@
       O método main() com System.exit implícito não é um problema real aqui.
     -->
     <Match>
-        <Class name="br.ufpb.dsc.mercado.MercadoApplication"/>
+        <Class name="br.ufpb.dsc.republica.RepublicaApplication"/>
     </Match>
 
 </FindBugsFilter>
+

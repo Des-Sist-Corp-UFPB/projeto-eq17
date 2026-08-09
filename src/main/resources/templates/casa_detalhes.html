@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR"
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::main})}">
+<body>
+
+<main>
+    <!-- Header da República -->
+    <div class="row align-items-center mb-4 bg-white p-4 rounded-3 border">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item"><a th:href="@{/dashboard}" class="text-decoration-none">Minhas Repúblicas</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">República</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold text-dark mb-1" th:text="${casa.nome}">Nome da República</h2>
+            <p class="text-muted small mb-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" 
+                     class="bi bi-geo-alt-fill me-1" viewBox="0 0 16 16">
+                    <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10m0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6"/>
+                </svg>
+                <span th:text="${casa.endereco}">Endereço</span>
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <span class="badge bg-primary px-3 py-2 fs-6" th:text="${moradores.size()} + ' Morador(es)'">
+                0 Moradores
+            </span>
+        </div>
+    </div>
+
+    <!-- Interface em Abas -->
+    <ul class="nav nav-tabs mb-4" id="republicaTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="despesas-tab" data-bs-toggle="tab" data-bs-target="#despesas-pane" 
+                    type="button" role="tab" aria-controls="despesas-pane" aria-selected="true">
+                Finanças e Despesas
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tarefas-tab" data-bs-toggle="tab" data-bs-target="#tarefas-pane" 
+                    type="button" role="tab" aria-controls="tarefas-pane" aria-selected="false">
+                Tarefas Domésticas
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="moradores-tab" data-bs-toggle="tab" data-bs-target="#moradores-pane" 
+                    type="button" role="tab" aria-controls="moradores-pane" aria-selected="false">
+                Moradores
+            </button>
+        </li>
+    </ul>
+
+    <!-- Conteúdo das Abas -->
+    <div class="tab-content" id="republicaTabsContent">
+
+        <!-- ABA DE FINANÇAS -->
+        <div class="tab-pane fade show active" id="despesas-pane" role="tabpanel" aria-labelledby="despesas-tab">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-bold text-dark mb-0">Contas e Lançamentos</h4>
+                <button class="btn btn-primary btn-sm d-inline-flex align-items-center"
+                        data-bs-toggle="modal" data-bs-target="#lancarDespesaModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 
+                         class="bi bi-wallet-fill me-2" viewBox="0 0 16 16">
+                        <path d="M1.5 2A1.5 1.5 0 0 0 0 3.5v2h6a.5.5 0 0 1 .5.5c0 .253.08.644.306.958.207.288.557.542 1.194.542.637 0 .987-.254 1.194-.542.226-.314.306-.705.306-.958a.5.5 0 0 1 .5-.5h6v-2A1.5 1.5 0 0 0 14.5 2z"/>
+                        <path d="M16 6.5h-5.551a2.678 2.678 0 0 1-.443 1.042C9.613 8.088 8.963 8.5 8 8.5c-.963 0-1.613-.412-2.006-.958A2.679 2.679 0 0 1 5.551 6.5H0v6A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5z"/>
+                    </svg>
+                    Lançar Despesa
+                </button>
+            </div>
+
+            <!-- Tabela de Despesas -->
+            <div id="secao-despesas">
+                <div th:replace="~{fragments/republica_fragments :: lista-despesas}"></div>
+            </div>
+        </div>
+
+        <!-- ABA DE TAREFAS DOMÉSTICAS -->
+        <div class="tab-pane fade" id="tarefas-pane" role="tabpanel" aria-labelledby="tarefas-tab">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-bold text-dark mb-0">Quadro de Tarefas</h4>
+                <button class="btn btn-primary btn-sm d-inline-flex align-items-center"
+                        data-bs-toggle="modal" data-bs-target="#criarTarefaModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 
+                         class="bi bi-calendar-check-fill me-2" viewBox="0 0 16 16">
+                        <path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4zm5.402 9.746c.082-.166.02-.343-.13-.418l-1.524-.73-.58.267v1.73l.414-.158zm-.397 3.09l.412.162.592-.25v-1.74l-.403.149zm-2.007-1.15v1.31l1-.383v-1.306zM1.5 5.5A1.5 1.5 0 0 0 0 7v7a1.5 1.5 0 0 0 1.5 1.5h13a1.5 1.5 0 0 0 1.5-1.5V7a1.5 1.5 0 0 0-1.5-1.5zM8.5 7h1v1.5h-1zm3 0h1v1.5h-1zm-6 3h1v1.5h-1zm3 0h1v1.5h-1zm3 0h1v1.5h-1zm-6 3h1v1.5h-1zm3 0h1v1.5h-1z"/>
+                    </svg>
+                    Nova Tarefa
+                </button>
+            </div>
+
+            <!-- Lista de Tarefas -->
+            <div id="secao-tarefas">
+                <div th:replace="~{fragments/republica_fragments :: lista-tarefas}"></div>
+            </div>
+        </div>
+
+        <!-- ABA DE MORADORES -->
+        <div class="tab-pane fade" id="moradores-pane" role="tabpanel" aria-labelledby="moradores-tab">
+            <div class="row">
+                <!-- Listagem de Moradores -->
+                <div class="col-md-7 mb-4">
+                    <h5 class="fw-bold text-dark mb-3">Membros Ativos</h5>
+                    <div id="secao-moradores">
+                        <div th:replace="~{fragments/republica_fragments :: lista-moradores}"></div>
+                    </div>
+                </div>
+
+                <!-- Formulário de Convite -->
+                <div class="col-md-5">
+                    <div class="card p-4 bg-white">
+                        <h5 class="fw-bold text-dark mb-2">Convidar Morador</h5>
+                        <p class="text-muted small">
+                            Convide outros usuários do sistema para participar desta república. Insira o e-mail cadastrado deles.
+                        </p>
+                        
+                        <!-- Formulário HTMX -->
+                        <form th:hx-post="@{/casas/{id}/moradores(id=${casa.id})}" 
+                              hx-target="#secao-moradores"
+                              hx-swap="innerHTML"
+                              class="mt-3">
+                            <div class="mb-3">
+                                <label for="emailConvite" class="form-label small fw-semibold text-secondary">E-mail do Usuário</label>
+                                <input type="email" class="form-control form-control-sm" id="emailConvite" name="email" 
+                                       placeholder="exemplo@email.com" required/>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm w-100">Adicionar à República</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL LANÇAR DESPESA -->
+    <div class="modal fade" id="lancarDespesaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content shadow rounded-3 border-0">
+                <form th:action="@{/despesas/casa/{casaId}(casaId=${casa.id})}" th:object="${despesaForm}" method="post">
+                    <div class="modal-header border-bottom-0 pt-4 px-4">
+                        <h5 class="modal-title fw-bold text-dark">Lançar nova Despesa</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body px-4">
+                        <div class="mb-3">
+                            <label for="desc" class="form-label small fw-semibold text-secondary">Descrição da Conta</label>
+                            <input type="text" class="form-control" id="desc" th:field="*{descricao}" 
+                                   placeholder="Ex: Energia, Água, Internet..." required/>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label for="valor" class="form-label small fw-semibold text-secondary">Valor Total (R$)</label>
+                                <input type="number" step="0.01" class="form-control" id="valor" th:field="*{valorTotal}" 
+                                       placeholder="0.00" required/>
+                            </div>
+                            <div class="col">
+                                <label for="venc" class="form-label small fw-semibold text-secondary">Vencimento</label>
+                                <input type="date" class="form-control" id="venc" th:field="*{vencimento}" required/>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="resp" class="form-label small fw-semibold text-secondary">Responsável pelo Pagamento</label>
+                            <select class="form-select" id="resp" th:field="*{responsavelId}" required>
+                                <option value="" disabled selected>Selecione um morador...</option>
+                                <option th:each="morador : ${moradores}" 
+                                        th:value="${morador.id}" 
+                                        th:text="${morador.usuario.nome}"></option>
+                            </select>
+                            <span class="form-text text-muted small">Quem irá centralizar e receber as transferências.</span>
+                        </div>
+                        
+                        <div class="alert alert-info py-2 small mb-0">
+                            <strong>Nota:</strong> Esta despesa será dividida de forma automática e igualitária entre todos os moradores ativos da república.
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 pb-4 px-4">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Lançar Despesa</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CRIAR TAREFA -->
+    <div class="modal fade" id="criarTarefaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content shadow rounded-3 border-0">
+                <!-- Form submetido via HTMX -->
+                <form th:hx-post="@{/tarefas/casa/{casaId}(casaId=${casa.id})}" 
+                      hx-target="#secao-tarefas"
+                      hx-swap="innerHTML"
+                      data-bs-dismiss="modal"
+                      th:object="${tarefaForm}">
+                    <div class="modal-header border-bottom-0 pt-4 px-4">
+                        <h5 class="modal-title fw-bold text-dark">Cadastrar Tarefa Doméstica</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body px-4">
+                        <div class="mb-3">
+                            <label for="descTarefa" class="form-label small fw-semibold text-secondary">Descrição da Tarefa</label>
+                            <input type="text" class="form-control" id="descTarefa" th:field="*{descricao}" 
+                                   placeholder="Ex: Lavar a louça, Limpar a cozinha..." required/>
+                        </div>
+                        <div class="mb-3">
+                            <label for="respTarefa" class="form-label small fw-semibold text-secondary">Responsável (Opcional)</label>
+                            <select class="form-select" id="respTarefa" th:field="*{responsavelId}">
+                                <option value="">Não delegar (Pendente)</option>
+                                <option th:each="morador : ${moradores}" 
+                                        th:value="${morador.id}" 
+                                        th:text="${morador.usuario.nome}"></option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 pb-4 px-4">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">Criar Tarefa</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+</body>
+</html>

@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DespesaService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">republicas</a> &gt; <a href="index.source.html" class="el_package">br.ufpb.dsc.republica.service</a> &gt; <span class="el_source">DespesaService.java</span></div><h1>DespesaService.java</h1><pre class="source lang-java linenums">package br.ufpb.dsc.republica.service;
+
+import br.ufpb.dsc.republica.domain.*;
+import br.ufpb.dsc.republica.dto.DespesaForm;
+import br.ufpb.dsc.republica.repository.*;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@Transactional
+public class DespesaService {
+
+    private final DespesaRepository despesaRepository;
+    private final DespesaRateioRepository despesaRateioRepository;
+    private final PagamentoRepository pagamentoRepository;
+    private final CasaRepository casaRepository;
+    private final MoradorRepository moradorRepository;
+    private final NotificacaoService notificacaoService;
+    private final AuditoriaService auditoriaService;
+    private final UploadStorageService uploadStorageService;
+
+    public DespesaService(DespesaRepository despesaRepository,
+                          DespesaRateioRepository despesaRateioRepository,
+                          PagamentoRepository pagamentoRepository,
+                          CasaRepository casaRepository,
+                          MoradorRepository moradorRepository,
+                          NotificacaoService notificacaoService,
+                          AuditoriaService auditoriaService,
+<span class="fc" id="L37">                          UploadStorageService uploadStorageService) {</span>
+<span class="fc" id="L38">        this.despesaRepository = despesaRepository;</span>
+<span class="fc" id="L39">        this.despesaRateioRepository = despesaRateioRepository;</span>
+<span class="fc" id="L40">        this.pagamentoRepository = pagamentoRepository;</span>
+<span class="fc" id="L41">        this.casaRepository = casaRepository;</span>
+<span class="fc" id="L42">        this.moradorRepository = moradorRepository;</span>
+<span class="fc" id="L43">        this.notificacaoService = notificacaoService;</span>
+<span class="fc" id="L44">        this.auditoriaService = auditoriaService;</span>
+<span class="fc" id="L45">        this.uploadStorageService = uploadStorageService;</span>
+<span class="fc" id="L46">    }</span>
+
+    @Transactional(readOnly = true)
+    public List&lt;Despesa&gt; buscarDespesasPorCasa(Long casaId) {
+<span class="fc" id="L50">        return despesaRepository.findByCasaIdAndExcluidoFalseOrderByVencimentoAsc(casaId);</span>
+    }
+
+    @Transactional(readOnly = true)
+    public Despesa buscarPorId(Long id) {
+<span class="fc" id="L55">        Despesa despesa = despesaRepository.findById(id)</span>
+<span class="fc" id="L56">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Despesa não encontrada com o ID: &quot; + id));</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">        if (despesa.getExcluido()) {</span>
+<span class="nc" id="L58">            throw new IllegalArgumentException(&quot;Esta despesa foi removida.&quot;);</span>
+        }
+<span class="fc" id="L60">        return despesa;</span>
+    }
+
+    public Despesa cadastrarDespesa(Long casaId, DespesaForm form) {
+<span class="fc" id="L64">        Casa casa = casaRepository.findById(casaId)</span>
+<span class="pc" id="L65">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Casa não encontrada.&quot;));</span>
+
+<span class="fc" id="L67">        Morador responsavel = moradorRepository.findById(form.responsavelId())</span>
+<span class="pc" id="L68">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Responsável não encontrado.&quot;));</span>
+
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        if (!responsavel.getCasa().getId().equals(casaId)) {</span>
+<span class="nc" id="L71">            throw new IllegalArgumentException(&quot;O responsável deve ser morador da mesma casa.&quot;);</span>
+        }
+
+<span class="fc" id="L74">        List&lt;Morador&gt; moradores = moradorRepository.findByCasaId(casaId);</span>
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">        if (moradores.isEmpty()) {</span>
+<span class="nc" id="L76">            throw new IllegalArgumentException(&quot;A casa deve ter pelo menos um morador para registrar despesas.&quot;);</span>
+        }
+
+<span class="fc" id="L79">        Despesa despesa = new Despesa(casa, form.descricao(), form.valorTotal(), form.vencimento(), responsavel, StatusDespesa.PENDENTE, form.tipo(), form.chavePix());</span>
+<span class="fc" id="L80">        despesa = despesaRepository.save(despesa);</span>
+
+        // Divisão automática e matemática exata do rateio
+<span class="fc" id="L83">        int numMoradores = moradores.size();</span>
+<span class="fc" id="L84">        BigDecimal valorTotal = form.valorTotal();</span>
+<span class="fc" id="L85">        BigDecimal valorBase = valorTotal.divide(BigDecimal.valueOf(numMoradores), 2, RoundingMode.DOWN);</span>
+<span class="fc" id="L86">        BigDecimal somaBase = valorBase.multiply(BigDecimal.valueOf(numMoradores));</span>
+<span class="fc" id="L87">        BigDecimal diferenca = valorTotal.subtract(somaBase);</span>
+
+<span class="fc" id="L89">        List&lt;DespesaRateio&gt; rateios = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        for (int i = 0; i &lt; numMoradores; i++) {</span>
+<span class="fc" id="L91">            Morador morador = moradores.get(i);</span>
+<span class="fc" id="L92">            BigDecimal valorDevido = valorBase;</span>
+            
+            // Adiciona a diferença de centavos ao primeiro morador da lista
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">            if (i == 0) {</span>
+<span class="fc" id="L96">                valorDevido = valorDevido.add(diferenca);</span>
+            }
+
+<span class="fc" id="L99">            DespesaRateio rateio = new DespesaRateio(despesa, morador, valorDevido);</span>
+<span class="fc" id="L100">            rateio = despesaRateioRepository.save(rateio);</span>
+
+            // Cria o registro do pagamento pendente associado ao rateio
+<span class="fc" id="L103">            Pagamento pagamento = new Pagamento(rateio, StatusPagamento.PENDENTE);</span>
+<span class="fc" id="L104">            pagamentoRepository.save(pagamento);</span>
+
+<span class="fc" id="L106">            rateio.getPagamentos().add(pagamento);</span>
+<span class="fc" id="L107">            rateios.add(rateio);</span>
+        }
+
+<span class="fc" id="L110">        despesa.setRateios(rateios);</span>
+
+        // Disparar notificações de criação de despesa para cada morador
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        for (DespesaRateio rateio : rateios) {</span>
+<span class="fc" id="L114">            Usuario usuario = rateio.getMorador().getUsuario();</span>
+<span class="fc" id="L115">            String titulo = &quot;Nova despesa lançada!&quot;;</span>
+<span class="fc" id="L116">            String mensagem = String.format(&quot;A despesa '%s' no valor total de R$ %.2f foi lançada. Sua parte individual a pagar é R$ %.2f com vencimento em %s.&quot;,</span>
+<span class="fc" id="L117">                    despesa.getDescricao(),</span>
+<span class="fc" id="L118">                    despesa.getValorTotal(),</span>
+<span class="fc" id="L119">                    rateio.getValorDevido(),</span>
+<span class="fc" id="L120">                    despesa.getVencimento()</span>
+            );
+<span class="fc" id="L122">            notificacaoService.criarNotificacao(usuario, titulo, mensagem, TipoNotificacao.DESPESA_CRIADA);</span>
+<span class="fc" id="L123">        }</span>
+
+        // Auditoria: Criação de despesa
+<span class="fc" id="L126">        auditoriaService.registrarAcaoUsuarioLogado(&quot;CRIACAO_DESPESA&quot;, </span>
+<span class="fc" id="L127">                String.format(&quot;Criou a despesa '%s' com o valor total de R$ %.2f na casa '%s'.&quot;, despesa.getDescricao(), despesa.getValorTotal(), casa.getNome()), </span>
+<span class="fc" id="L128">                &quot;Despesa&quot;, despesa.getId());</span>
+
+<span class="fc" id="L130">        return despesa;</span>
+    }
+
+    public void informarPagamento(Long rateioId, String comprovante) {
+<span class="fc" id="L134">        DespesaRateio rateio = despesaRateioRepository.findById(rateioId)</span>
+<span class="pc" id="L135">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Rateio não encontrado.&quot;));</span>
+
+        // Cria ou atualiza o pagamento associado
+<span class="fc" id="L138">        Pagamento pagamento = rateio.getUltimoPagamento();</span>
+<span class="pc bpc" id="L139" title="2 of 4 branches missed.">        if (pagamento == null || pagamento.getStatus() == StatusPagamento.CONFIRMADO) {</span>
+<span class="nc" id="L140">            pagamento = new Pagamento(rateio, StatusPagamento.INFORMADO);</span>
+        } else {
+<span class="fc" id="L142">            pagamento.setStatus(StatusPagamento.INFORMADO);</span>
+        }
+
+<span class="fc" id="L145">        pagamento.setDataPagamento(Instant.now());</span>
+<span class="fc" id="L146">        pagamento.setComprovante(comprovante);</span>
+<span class="fc" id="L147">        pagamentoRepository.save(pagamento);</span>
+
+        // Atualiza status da Despesa
+<span class="fc" id="L150">        atualizarStatusDespesa(rateio.getDespesa());</span>
+
+        // Auditoria: Informar Pagamento
+<span class="fc" id="L153">        auditoriaService.registrarAcaoUsuarioLogado(&quot;INFORMAR_PAGAMENTO&quot;, </span>
+<span class="fc" id="L154">                String.format(&quot;Informou comprovante de pagamento para o rateio de valor R$ %.2f da despesa '%s'.&quot;, rateio.getValorDevido(), rateio.getDespesa().getDescricao()), </span>
+                &quot;DespesaRateio&quot;, rateioId);
+<span class="fc" id="L156">    }</span>
+
+    public void informarPagamentoComArquivo(Long rateioId, MultipartFile arquivo) {
+<span class="fc" id="L159">        DespesaRateio rateio = despesaRateioRepository.findById(rateioId)</span>
+<span class="pc" id="L160">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Rateio não encontrado.&quot;));</span>
+
+        // Grava o arquivo físico local e gera o nome único
+<span class="fc" id="L163">        String nomeArquivoGerado = uploadStorageService.salvarComprovante(arquivo);</span>
+
+        // Cria ou atualiza o pagamento associado
+<span class="fc" id="L166">        Pagamento pagamento = rateio.getUltimoPagamento();</span>
+<span class="pc bpc" id="L167" title="2 of 4 branches missed.">        if (pagamento == null || pagamento.getStatus() == StatusPagamento.CONFIRMADO) {</span>
+<span class="nc" id="L168">            pagamento = new Pagamento(rateio, StatusPagamento.INFORMADO);</span>
+        } else {
+<span class="fc" id="L170">            pagamento.setStatus(StatusPagamento.INFORMADO);</span>
+        }
+
+<span class="fc" id="L173">        pagamento.setDataPagamento(Instant.now());</span>
+<span class="fc" id="L174">        pagamento.setComprovante(nomeArquivoGerado);</span>
+<span class="fc" id="L175">        pagamentoRepository.save(pagamento);</span>
+
+        // Atualiza status da Despesa
+<span class="fc" id="L178">        atualizarStatusDespesa(rateio.getDespesa());</span>
+
+        // Auditoria: Informar Pagamento com arquivo físico
+<span class="fc" id="L181">        auditoriaService.registrarAcaoUsuarioLogado(&quot;INFORMAR_PAGAMENTO&quot;, </span>
+<span class="fc" id="L182">                String.format(&quot;Realizou o upload do comprovante de pagamento físico (%s) para o rateio de valor R$ %.2f da despesa '%s'.&quot;, </span>
+<span class="fc" id="L183">                        arquivo.getOriginalFilename(), rateio.getValorDevido(), rateio.getDespesa().getDescricao()), </span>
+                &quot;DespesaRateio&quot;, rateioId);
+<span class="fc" id="L185">    }</span>
+
+    @Transactional(readOnly = true)
+    public boolean podeVisualizarComprovante(Long pagamentoId, String emailUsuario) {
+<span class="fc" id="L189">        Pagamento pagamento = pagamentoRepository.findById(pagamentoId)</span>
+<span class="pc" id="L190">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Pagamento não encontrado.&quot;));</span>
+
+<span class="fc" id="L192">        DespesaRateio rateio = pagamento.getRateio();</span>
+<span class="fc" id="L193">        Despesa despesa = rateio.getDespesa();</span>
+<span class="fc" id="L194">        Casa casa = despesa.getCasa();</span>
+
+        // 1. O próprio morador dono do rateio/pagamento
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">        if (rateio.getMorador().getUsuario().getEmail().equalsIgnoreCase(emailUsuario)) {</span>
+<span class="fc" id="L198">            return true;</span>
+        }
+
+        // 2. O morador responsável pelo pagamento da despesa como um todo
+<span class="nc bnc" id="L202" title="All 2 branches missed.">        if (despesa.getResponsavel().getUsuario().getEmail().equalsIgnoreCase(emailUsuario)) {</span>
+<span class="nc" id="L203">            return true;</span>
+        }
+
+        // 3. Qualquer morador ADMINISTRADOR da casa
+<span class="nc" id="L207">        Optional&lt;Morador&gt; moradorLogadoOpt = moradorRepository.findByCasaIdAndUsuarioEmail(casa.getId(), emailUsuario);</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">        if (moradorLogadoOpt.isPresent()) {</span>
+<span class="nc" id="L209">            Morador moradorLogado = moradorLogadoOpt.get();</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">            if (moradorLogado.getPapel() == PapelMorador.ADMINISTRADOR) {</span>
+<span class="nc" id="L211">                return true;</span>
+            }
+        }
+
+<span class="nc" id="L215">        return false;</span>
+    }
+
+    public void confirmarPagamento(Long pagamentoId) {
+<span class="fc" id="L219">        Pagamento pagamento = pagamentoRepository.findById(pagamentoId)</span>
+<span class="pc" id="L220">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Pagamento não encontrado.&quot;));</span>
+
+<span class="fc" id="L222">        pagamento.setStatus(StatusPagamento.CONFIRMADO);</span>
+<span class="fc" id="L223">        pagamentoRepository.save(pagamento);</span>
+
+        // Atualiza status da Despesa
+<span class="fc" id="L226">        atualizarStatusDespesa(pagamento.getRateio().getDespesa());</span>
+
+        // Auditoria: Confirmação de pagamento
+<span class="fc" id="L229">        auditoriaService.registrarAcaoUsuarioLogado(&quot;CONFIRMACAO_PAGAMENTO&quot;, </span>
+<span class="fc" id="L230">                String.format(&quot;Confirmou pagamento do rateio do morador '%s' no valor de R$ %.2f para a despesa '%s'.&quot;, </span>
+<span class="fc" id="L231">                        pagamento.getRateio().getMorador().getUsuario().getNome(), </span>
+<span class="fc" id="L232">                        pagamento.getRateio().getValorDevido(), </span>
+<span class="fc" id="L233">                        pagamento.getRateio().getDespesa().getDescricao()), </span>
+                &quot;Pagamento&quot;, pagamentoId);
+<span class="fc" id="L235">    }</span>
+
+    public void rejeitarPagamento(Long pagamentoId) {
+<span class="fc" id="L238">        Pagamento pagamento = pagamentoRepository.findById(pagamentoId)</span>
+<span class="pc" id="L239">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Pagamento não encontrado.&quot;));</span>
+
+<span class="fc" id="L241">        pagamento.setStatus(StatusPagamento.REJEITADO);</span>
+<span class="fc" id="L242">        pagamentoRepository.save(pagamento);</span>
+
+        // Atualiza status da Despesa
+<span class="fc" id="L245">        atualizarStatusDespesa(pagamento.getRateio().getDespesa());</span>
+
+        // Auditoria: Rejeição de pagamento
+<span class="fc" id="L248">        auditoriaService.registrarAcaoUsuarioLogado(&quot;REJEITAR_PAGAMENTO&quot;, </span>
+<span class="fc" id="L249">                String.format(&quot;Rejeitou o pagamento do rateio do morador '%s' no valor de R$ %.2f para a despesa '%s'.&quot;, </span>
+<span class="fc" id="L250">                        pagamento.getRateio().getMorador().getUsuario().getNome(), </span>
+<span class="fc" id="L251">                        pagamento.getRateio().getValorDevido(), </span>
+<span class="fc" id="L252">                        pagamento.getRateio().getDespesa().getDescricao()), </span>
+                &quot;Pagamento&quot;, pagamentoId);
+<span class="fc" id="L254">    }</span>
+
+    public void excluirDespesa(Long despesaId) {
+<span class="fc" id="L257">        Despesa despesa = buscarPorId(despesaId);</span>
+<span class="fc" id="L258">        despesa.setExcluido(true);</span>
+<span class="fc" id="L259">        despesaRepository.save(despesa);</span>
+
+        // Auditoria: Exclusão lógica de despesa
+<span class="fc" id="L262">        auditoriaService.registrarAcaoUsuarioLogado(&quot;EXCLUSAO_LOGICA_DESPESA&quot;, </span>
+<span class="fc" id="L263">                String.format(&quot;Excluiu logicamente a despesa '%s' de valor R$ %.2f.&quot;, despesa.getDescricao(), despesa.getValorTotal()), </span>
+                &quot;Despesa&quot;, despesaId);
+<span class="fc" id="L265">    }</span>
+
+    private void atualizarStatusDespesa(Despesa despesa) {
+<span class="fc" id="L268">        List&lt;DespesaRateio&gt; rateios = despesa.getRateios();</span>
+        
+<span class="fc" id="L270">        boolean todosConfirmados = true;</span>
+<span class="fc" id="L271">        boolean algumConfirmadoOuInformado = false;</span>
+
+<span class="fc bfc" id="L273" title="All 2 branches covered.">        for (DespesaRateio rateio : rateios) {</span>
+<span class="fc" id="L274">            Pagamento pag = rateio.getUltimoPagamento();</span>
+<span class="pc bpc" id="L275" title="1 of 4 branches missed.">            if (pag == null || pag.getStatus() != StatusPagamento.CONFIRMADO) {</span>
+<span class="fc" id="L276">                todosConfirmados = false;</span>
+            }
+<span class="pc bpc" id="L278" title="1 of 6 branches missed.">            if (pag != null &amp;&amp; (pag.getStatus() == StatusPagamento.CONFIRMADO || pag.getStatus() == StatusPagamento.INFORMADO)) {</span>
+<span class="fc" id="L279">                algumConfirmadoOuInformado = true;</span>
+            }
+<span class="fc" id="L281">        }</span>
+
+<span class="fc bfc" id="L283" title="All 2 branches covered.">        if (todosConfirmados) {</span>
+<span class="fc" id="L284">            despesa.setStatus(StatusDespesa.PAGA);</span>
+<span class="fc bfc" id="L285" title="All 2 branches covered.">        } else if (algumConfirmadoOuInformado) {</span>
+<span class="fc" id="L286">            despesa.setStatus(StatusDespesa.PARCIALMENTE_PAGA);</span>
+        } else {
+<span class="fc" id="L288">            despesa.setStatus(StatusDespesa.PENDENTE);</span>
+        }
+
+<span class="fc" id="L291">        despesaRepository.save(despesa);</span>
+<span class="fc" id="L292">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

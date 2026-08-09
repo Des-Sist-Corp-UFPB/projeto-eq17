@@ -15,15 +15,17 @@ FROM maven:3.9.9-eclipse-temurin-21 AS dev
 
 WORKDIR /app
 
-# Copiar apenas o pom.xml primeiro para aproveitar o cache de dependências.
-# Se o pom.xml não mudar, o Docker reutiliza a camada de "mvn dependency:go-offline".
+# Copiar apenas o pom.xml
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
+# RUN mvn dependency:go-offline -B (Comentado para acelerar o build; dependências serão resolvidas em runtime via volume persistente)
 
 # O restante do código-fonte é montado via volume no docker-compose.
 # Isso permite hot-reload sem reconstruir a imagem.
 
+# Baixar o agente do OpenTelemetry
+RUN wget -O /app/opentelemetry-javaagent.jar https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar
+
 EXPOSE 8080
 
 # Spring DevTools requer o argumento -Dspring-boot.run.fork=false para funcionar em container
-CMD ["mvn", "spring-boot:run", "-Dspring-boot.run.jvmArguments=-Dspring.profiles.active=dev"]
+CMD ["mvn", "spring-boot:run", "-Dspring-boot.run.jvmArguments=-javaagent:/app/opentelemetry-javaagent.jar -Dspring.profiles.active=dev"]

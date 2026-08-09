@@ -7,30 +7,48 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.5</version>
+        <version>3.5.14</version>
         <relativePath/>
     </parent>
 
     <groupId>br.ufpb.dsc</groupId>
-    <artifactId>mercado</artifactId>
+    <artifactId>republicas</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>mercado</name>
+    <name>republicas</name>
     <description>Projeto base DSC - UFPB Campus IV</description>
 
     <properties>
         <java.version>21</java.version>
         <!-- Versões de dependências -->
         <testcontainers.version>1.20.4</testcontainers.version>
-        <webjars-bootstrap.version>5.3.3</webjars-bootstrap.version>
+        <tomcat.version>10.1.55</tomcat.version>
+        <postgresql.version>42.7.11</postgresql.version>
+        <webjars-bootstrap.version>5.3.8</webjars-bootstrap.version>
         <webjars-htmx.version>2.0.4</webjars-htmx.version>
         <!-- Versões de plugins SAST/qualidade -->
         <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
         <findsecbugs-plugin.version>1.13.0</findsecbugs-plugin.version>
-        <dependency-check-maven.version>11.1.1</dependency-check-maven.version>
+        <dependency-check-maven.version>12.2.1</dependency-check-maven.version>
         <versions-maven-plugin.version>2.18.0</versions-maven-plugin.version>
         <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
+        <spring-ai.version>1.1.8</spring-ai.version>
     </properties>
+
+
+
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <!-- === WEB === -->
@@ -54,6 +72,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
         </dependency>
 
         <!-- === BANCO DE DADOS === -->
@@ -88,6 +110,17 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- === OPENTELEMETRY === -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-instrumentation-annotations</artifactId>
+            <version>2.12.0</version>
+        </dependency>
+
         <!-- === FRONTEND: Bootstrap + HTMX via WebJars === -->
         <dependency>
             <groupId>org.webjars</groupId>
@@ -102,14 +135,6 @@
             <groupId>org.webjars.npm</groupId>
             <artifactId>htmx.org</artifactId>
             <version>${webjars-htmx.version}</version>
-        </dependency>
-
-        <!-- === DEV TOOLS (apenas desenvolvimento) === -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <scope>runtime</scope>
-            <optional>true</optional>
         </dependency>
 
         <!-- === TESTES === -->
@@ -141,6 +166,26 @@
             <artifactId>spring-boot-testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Spring Mail: envio de e-mails via SMTP -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
+        <!-- === SPRING AI & MCP SERVER === -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
+        </dependency>
+
+
+
+
+
     </dependencies>
 
     <build>
@@ -156,13 +201,23 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco-maven-plugin.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>br/ufpb/dsc/republica/dto/**</exclude>
+                        <exclude>br/ufpb/dsc/republica/domain/**</exclude>
+                        <exclude>br/ufpb/dsc/republica/exception/**</exclude>
+                        <exclude>br/ufpb/dsc/republica/config/**</exclude>
+                        <exclude>br/ufpb/dsc/republica/controller/**</exclude>
+                        <exclude>br/ufpb/dsc/republica/RepublicaApplication.class</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <goals><goal>prepare-agent</goal></goals>
                     </execution>
                     <execution>
                         <id>report</id>
-                        <phase>verify</phase>
+                        <phase>test</phase>
                         <goals><goal>report</goal></goals>
                     </execution>
                 </executions>
@@ -170,7 +225,7 @@
         </plugins>
     </build>
 
-    <!-- Perfil 'security': ativa SAST + verificação de dependências -->
+    <!-- Perfil 'security': ativa SAST -->
     <!-- Uso: mvn verify -Psecurity -->
     <profiles>
         <profile>
@@ -202,13 +257,23 @@
                             </execution>
                         </executions>
                     </plugin>
+                </plugins>
+            </build>
+        </profile>
 
-                    <!-- OWASP Dependency-Check: CVEs nas dependências -->
+        <!-- Perfil 'dependency-check': verifica CVEs nas dependências -->
+        <!-- Uso: NVD_API_KEY=sua-chave mvn verify -Pdependency-check -DskipTests -->
+        <profile>
+            <id>dependency-check</id>
+            <build>
+                <plugins>
                     <plugin>
                         <groupId>org.owasp</groupId>
                         <artifactId>dependency-check-maven</artifactId>
                         <version>${dependency-check-maven.version}</version>
                         <configuration>
+                            <dataDirectory>${user.home}/.dependency-check</dataDirectory>
+                            <nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
                             <failBuildOnCVSS>7</failBuildOnCVSS>
                             <suppressionFiles>
                                 <suppressionFile>owasp-suppressions.xml</suppressionFile>
@@ -223,6 +288,19 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <!-- Perfil 'devtools': use localmente com mvn spring-boot:run -Pdevtools -->
+        <profile>
+            <id>devtools</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-devtools</artifactId>
+                    <scope>runtime</scope>
+                    <optional>true</optional>
+                </dependency>
+            </dependencies>
         </profile>
 
         <!-- Perfil 'versions': mostra dependências desatualizadas -->
@@ -243,4 +321,25 @@
             </build>
         </profile>
     </profiles>
+
+    <repositories>
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/milestone</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
 </project>
